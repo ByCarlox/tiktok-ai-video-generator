@@ -1,0 +1,39 @@
+# .gitignore - TikTok AI Video Generator
+
+# Entorno virtual
+.venv/
+venv/
+ENV/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Archivos de salida y trabajo temporales
+output/work/
+output/videos/
+output/para_subir/
+output/trends.json
+
+# Archivos pesados de multimedia (imágenes, audios y videos generados)
+*.mp4
+*.mp3
+*.wav
+*.srt
+*.jpg
+*.jpeg
+*.png
+
+# Archivos del sistema Mac
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Obsidian (mantener la estructura pero ignorar medios si aplica)
+TikTok-AI-Passive/03-Contenidos/Episodios/2026-*
+
+# Variables de entorno y claves secretas
+.env
+config.local.yaml

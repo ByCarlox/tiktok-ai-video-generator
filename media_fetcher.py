@@ -1,0 +1,246 @@
+# media_fetcher.py - v1.0 — Fuentes Open Source Múltiples para Imágenes y Videos
+"""
+Proveedor unificado de recursos multimedia libres / open source:
+1. Pixabay API (videos e imágenes)
+2. Wikimedia Commons API (recursos 100% libres/open source de ciencia, espacio, laboratorios)
+3. Pexels API / Fallback (videos e imágenes HD/4K)
+4. Pollinations.ai (Generación de imágenes IA en 4K con modelo Flux)
+"""
+import json
+import urllib.parse
+import requests
+import yaml
+from pathlib import Path
+
+def cfg():
+    with open("config.yaml", "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+# ---------- BUSCADOR WIKIMEDIA COMMONS (OPEN SOURCE / PUBLIC DOMAIN) ----------
+def buscar_wikimedia_commons(query, limit=5, media_type="video"):
+    """Busca recursos multimedia 100% open source / CC en Wikimedia Commons API."""
+    print(f"      🏛️ Buscando en Wikimedia Commons ({media_type}): '{query}'...")
+    url = "https://commons.wikimedia.org/w/api.php"
+    
+    # Namespace 6 es File:
+    file_prefix = "File:"
+    search_q = f"{query} filetype:{'video' if media_type == 'video' else 'bitmap'}"
+    
+    params = {
+        "action": "query",
+        "format": "json",
+        "generator": "search",
+        "gsrsearch": search_q,
+        "gsrnamespace": 6,
+        "gsrlimit": limit * 2,
+        "prop": "imageinfo",
+        "iiprop": "url|mime|size|dimensions"
+    }
+    
+    resultados = []
+    try:
+        r = requests.get(url, params=params, headers={"User-Agent": "TikTokAIBot/4.0 (contact@example.com)"}, timeout=15)
+        data = r.json()
+        pages = data.get("query", {}).get("pages", {})
+        
+        for page_id, page_info in pages.items():
+            imageinfo = page_info.get("imageinfo", [])
+            if not imageinfo:
+                continue
+            info = imageinfo[0]
+            file_url = info.get("url")
+            mime = info.get("mime", "")
+            
+            if media_type == "video":
+                if "video" in mime or file_url.endswith((".mp4", ".webm", ".ogv")):
+                    resultados.append(file_url)
+            else:
+                if "image" in mime or file_url.endswith((".jpg", ".jpeg", ".png")):
+                    resultados.append(file_url)
+                    
+            if len(resultados) >= limit:
+                break
+    except Exception as e:
+        print(f"      ⚠️ Wikimedia search falló: {e}")
+        
+    return resultados
+
+
+# ---------- BUSCADOR PIXABAY (VIDEOS & IMÁGENES) ----------
+def buscar_pixabay_videos(query, api_key, limit=5):
+    """Busca video clips en Pixabay API."""
+    url = "https://pixabay.com/api/videos/"
+    params = {
+        "key": api_key,
+        "q": query,
+        "orientation": "vertical",
+        "per_page": limit
+    }
+    clips = []
+    try:
+        r = requests.get(url, params=params, timeout=15)
+        hits = r.json().get("hits", [])
+        if not hits:
+            params.pop("orientation", None)
+            r = requests.get(url, params=params, timeout=15)
+            hits = r.json().get("hits", [])
+            
+        for hit in hits:
+            duration = hit.get("duration", 5.0)
+            v_info = (hit.get("videos", {}).get("large") or 
+                      hit.get("videos", {}).get("medium") or 
+                      hit.get("videos", {}).get("small"))
+            if v_info and v_info.get("url"):
+                clips.append({
+                    "id": hit.get("id"),
+                    "url": v_info.get("url"),
+                    "duration": duration,
+                    "provider": "pixabay"
+                })
+    except Exception as e:
+        print(f"      ⚠️ Pixabay search falló: {e}")
+    return clips
+
+
+# ---------- BUSCADOR PEXELS (VIDEOS & IMÁGENES OPEN ACCESS) ----------
+def buscar_pexels_videos(query, pexels_key=None, limit=5):
+    """Busca video clips en Pexels API o pública."""
+    if not pexels_key:
+        return []
+    url = "https://api.pexels.com/videos/search"
+    headers = {"Authorization": pexels_key}
+    params = {"query": query, "orientation": "portrait", "per_page": limit}
+    clips = []
+    try:
+        r = requests.get(url, headers=headers, params=params, timeout=15)
+        video_hits = r.json().get("videos", [])
+        for hit in video_hits:
+            duration = hit.get("duration", 5.0)
+            files = hit.get("video_files", [])
+            # Filtrar preferencia HD/HD portrait
+            v_url = None
+            for vf in files:
+                if vf.get("width") and vf.get("height"):
+                    if vf.get("height", 0) > vf.get("width", 0):  # vertical
+                        v_url = vf.get("link")
+                        break
+            if not v_url and files:
+                v_url = files[0].get("link")
+                
+            if v_url:
+                clips.append({
+                    "id": hit.get("id"),
+                    "url": v_url,
+                    "duration": duration,
+                    "provider": "pexels"
+                })
+    except Exception as e:
+        print(f"      ⚠️ Pexels search falló: {e}")
+    return clips
+
+
+# ---------- DESCARGADOR DE CLIPS MULTI-FUENTE ----------
+def obtener_clips_multi_fuente(queries, work_dir, dur_audio, ffmpeg_scaler, tema="", pre_eval_func=None):
+    """
+    Busca clips de video mezclando Pixabay, Wikimedia Commons y Pexels.
+    Evalúa CADA candidato con el modelo de visión ANTES de reescalar.
+    Retorna lista de rutas de clips procesados en 4K/HD vertical.
+    """
+    config = cfg()
+    pixabay_key = config.get("musica", {}).get("api_key") or "57048016-b2ebc50dee017a04e526b6d2b"
+    pexels_key = config.get("publisher", {}).get("pexels_api_key") or config.get("pexels_api_key")
+    
+    rutas = []
+    total_duration = 0.0
+    clip_idx = 0
+    used_urls = set()
+    
+    for query in queries:
+        if total_duration >= dur_audio:
+            break
+            
+        print(f"      🔎 Buscando clip para query: '{query}'...")
+        clips_candidatos = []
+        
+        # 1. Intentar Pixabay
+        px_clips = buscar_pixabay_videos(query, pixabay_key, limit=3)
+        clips_candidatos.extend(px_clips)
+        
+        # 2. Intentar Pexels (si hay key)
+        if pexels_key:
+            pxl_clips = buscar_pexels_videos(query, pexels_key, limit=3)
+            clips_candidatos.extend(pxl_clips)
+            
+        # 3. Intentar Wikimedia Commons si aún no hay candidatos
+        if not clips_candidatos:
+            wm_urls = buscar_wikimedia_commons(query, limit=2, media_type="video")
+            for wurl in wm_urls:
+                clips_candidatos.append({
+                    "id": wurl,
+                    "url": wurl,
+                    "duration": 6.0,
+                    "provider": "wikimedia"
+                })
+                
+        # Pre-evaluar y procesar el primer candidato válido que supere 75% de relevancia
+        for clip in clips_candidatos:
+            v_url = clip["url"]
+            if v_url in used_urls:
+                continue
+            used_urls.add(v_url)
+            
+            duration = clip.get("duration", 5.0)
+            clip_path = work_dir / f"tmp_clip_{clip_idx}.mp4"
+            output_clip = work_dir / f"v{clip_idx}.mp4"
+            
+            print(f"      ⬇️ Descargando candidato {clip['provider']} [{duration}s]...")
+            try:
+                r = requests.get(v_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=60)
+                if r.status_code == 200:
+                    clip_path.write_bytes(r.content)
+                    
+                    # PRE-EVALUACIÓN ANTES DE ESCALAR: Inspección rápida por IA
+                    if pre_eval_func:
+                        aprobado, data_eval = pre_eval_func(clip_path, tema, query, work_dir)
+                        if not aprobado:
+                            print(f"      ⏭️ Clip de {clip['provider']} descartado en pre-evaluación (Relevancia < 75%). Probando siguiente candidato...")
+                            clip_path.unlink(missing_ok=True)
+                            continue
+                            
+                    # Escalar y recortar con FFmpeg al formato vertical 4K/1080p
+                    ffmpeg_scaler(clip_path, output_clip, clip_idx)
+                    if output_clip.exists() and output_clip.stat().st_size > 0:
+                        rutas.append(f"v{clip_idx}.mp4")
+                        total_duration += duration
+                        clip_idx += 1
+                        clip_path.unlink(missing_ok=True)
+                        break  # 1 clip pre-aprobado por query
+            except Exception as e:
+                print(f"      ⚠️ Error descargando clip de {clip['provider']}: {e}")
+                clip_path.unlink(missing_ok=True)
+                
+    # Fallback si ninguna fuente devolvió clips
+    if not rutas:
+        print("      ⚠️ Usando fallback de clips tech multi-fuente...")
+        fallback_queries = ["technology digital data", "futuristic science lab", "artificial intelligence network"]
+        for fq in fallback_queries:
+            if total_duration >= dur_audio:
+                break
+            px_clips = buscar_pixabay_videos(fq, pixabay_key, limit=2)
+            for clip in px_clips:
+                clip_path = work_dir / f"tmp_clip_{clip_idx}.mp4"
+                output_clip = work_dir / f"v{clip_idx}.mp4"
+                try:
+                    r = requests.get(clip["url"], timeout=60)
+                    if r.status_code == 200:
+                        clip_path.write_bytes(r.content)
+                        ffmpeg_scaler(clip_path, output_clip, clip_idx)
+                        rutas.append(f"v{clip_idx}.mp4")
+                        total_duration += clip.get("duration", 5.0)
+                        clip_idx += 1
+                        clip_path.unlink(missing_ok=True)
+                        break
+                except Exception:
+                    clip_path.unlink(missing_ok=True)
+                    
+    return rutas

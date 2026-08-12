@@ -1,0 +1,105 @@
+# config.yaml
+idioma_tendencia: "es-419"       # español latinoamericano neutro
+pais_tendencia:                  # múltiples países LATAM para mayor alcance
+  - MX
+  - AR
+  - CO
+  - CL
+  - PE
+categorias:                      # temas que le gustan al algoritmo
+  - tecnologia
+  - inteligencia artificial
+  - ciencia de datos
+  - ciencia
+  - innovacion
+  - productividad
+  - neurociencia
+  - espacio
+
+numero_videos: 3                 # cuántos videos generar por corrida
+duracion_max_segundos: 45
+resolucion: "4k"                 # "4k" (2160x3840) o "1080p" (1080x1920)
+calidad_crf: 15                  # CRF de FFmpeg (15 = ultra calidad, 20 = estándar)
+moneda: "USD"                    # siempre hablar en dólares para audiencia LATAM
+
+voz: "es-MX-JorgeNeural"         # voces gratis de Edge-TTS (acento neutro LATAM)
+# otras buenas: es-ES-AlvaroNeural, es-MX-JorgeNeural, es-AR-ElenaNeural
+
+# IA para guiones (elige una)
+ia:
+  proveedor: "ollama"            # ollama | openai | groq
+  modelo: "qwen3:8b"           # para ollama
+  # api_key: "tu-key"            # para openai/groq
+  # base_url: "https://api.groq.com/openai/v1"
+
+# IA para imágenes (elige una)
+imagenes:
+  proveedor: "pollinations"      # pollinations (gratis) | stability | replicate
+  # api_key: "tu-key"
+
+obsidian_vault: "TikTok-AI-Passive"
+salida_videos: "output/videos"
+
+musica:
+  proveedor: "pixabay"
+  api_key: "57048016-b2ebc50dee017a04e526b6d2b"
+  generos: ["electronic", "ambient", "cinematic", "pop", "lofi", "corporate", "inspirational"]
+  carpeta: "assets/musica"
+  volumen: 0.08  # 8% de volumen (no tapa la voz)
+
+# FILTRO DE TEMAS (evitar contenido sensible para monetización)
+filtro:
+  palabras_excluir:
+    - narco
+    - asesinado
+    - asesinato
+    - muerte
+    - muerto
+    - muertos
+    - detenido
+    - detienen
+    - arrestado
+    - explosión
+    - explosivo
+    - maltrato
+    - violencia
+    - violación
+    - abuso
+    - crimen
+    - criminal
+    - sangriento
+    - masacre
+    - secuestro
+    - droga
+    - drogas
+    - cartel
+    - cárteles
+    - fracking
+    - censura
+  temas_permitidos:
+    - tecnologia
+    - inteligencia artificial
+    - ciencia
+    - psicologia
+    - productividad
+    - curiosidades
+    - historia
+    - espacio
+    - salud
+    - educacion
+    - naturaleza
+    - animales
+    - dinero
+    - emprendimiento
+    - futuro
+    - innovacion
+    - nasa
+    - ia
+
+publisher:
+  estrategia: "manual"
+  metricool_api_key: ""
+  tiktok_client_key: ""
+  tiktok_client_secret: ""
+  tiktok_tokens_file: "tokens.json"
+  auto_publicar: true

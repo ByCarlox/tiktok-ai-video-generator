@@ -15,13 +15,43 @@ Un sistema autónomo de producción de videos virales en formato 9:16 (4K) para 
 
 ---
 
+## 🧠 Arquitectura de IA, Modelos y Lógica de Producción
+
+### 1. Modelos de Lenguaje e Inteligencia Artificial Utilizados
+El sistema utiliza una arquitectura híbrida optimizada para ejecutarse localmente sin depender de APIs de pago:
+
+- **`qwen3:8b` (Vía Ollama Local):**
+  - **Función:** Generación de guiones, estructuración de investigaciones previas, análisis de relevancia y redacción de metadatos (título, descripción, hashtags).
+  - **¿Por qué este modelo?:** Excelente compresión de contexto en español neutro, alta adherencia a restricciones de formato JSON estricto y excelente rendimiento en procesadores Apple Silicon (M-Series).
+- **`minicpm-v` (Visión Multimodal Local via Ollama):**
+  - **Función:** Inspección visual cuadro por cuadro (QA Pre-Renderizado) y evaluación de concordancia temática contra el guion narrado.
+  - **¿Por qué este modelo?:** Es uno de los modelos de visión de código abierto más eficientes del mundo. Permite analizar la composición, iluminación, calidad y relevancia visual de imágenes de 4K en segundos sin consumo excesivo de VRAM.
+- **`Pollinations Flux` (Generación de Imágenes IA 8K):**
+  - **Función:** Generación de imágenes fotorrealistas verticales (9:16) a partir de prompts estructurados por la IA.
+  - **Ventaja:** Generación rápida sin marcas de agua con calidad cinematográfica.
+
+---
+
+### 💡 Lógica de Negocio y Principios Narrativos
+
+1. **Investigación Estructurada Pre-Producción:**
+   - Antes de escribir una sola palabra del guion, el módulo `investigacion.py` consulta al modelo de IA para extraer una **Ficha Técnica**: resumen científico, 3 datos cuantitativos verificables, glosario de terminología y 5 conceptos visuales clave.
+2. **Español Neutro Panlatino & Moneda en USD:**
+   - Todo el contenido está diseñado para maximizar el alcance en los 20+ países de habla hispana. Se evitan modismos locales y todas las cifras económicas se expresan en dólares estadounidenses (USD) por practicidad regional.
+3. **Control de Calidad (QA) Pre-Renderizado por Asset (>= 75% Concordancia):**
+   - Para evitar perder tiempo renderizando o reescalando imágenes/videos irrelevantes, los videoclips y las imágenes son inspeccionados **ANTES** de entrar a la etapa de montaje. Si un recurso no alcanza el 75% de relevancia temática (`avg_relevance >= 18.75/25`), se descarta de inmediato y se busca/genera una alternativa.
+
+---
+
 ## 🛠️ Requisitos Previos
 
 - **Python 3.10+**
 - **FFmpeg** instalado en el sistema (`brew install ffmpeg`)
-- **Ollama** con los modelos:
-  - `qwen3:8b` (Texto y guion)
-  - `minicpm-v` (Visión multimodal)
+- **Ollama** ejecutándose localmente con los modelos:
+  ```bash
+  ollama pull qwen3:8b
+  ollama pull minicpm-v
+  ```
 
 ---
 
@@ -29,7 +59,7 @@ Un sistema autónomo de producción de videos virales en formato 9:16 (4K) para 
 
 1. **Clonar el repositorio:**
    ```bash
-   git clone https://github.com/tu-usuario/tiktok-ai-generator.git
+   git clone https://github.com/ByCarlox/tiktok-ai-video-generator.git
    cd tiktok-ai-generator
    ```
 
@@ -60,5 +90,5 @@ Un sistema autónomo de producción de videos virales en formato 9:16 (4K) para 
 ├── publisher.py       # Publicador multi-plataforma
 ├── analytics.py       # Actualizador de métricas en Obsidian
 ├── config.yaml        # Configuración central del canal
-└── README.md          # Documentación del proyecto
+└── README.md          # Documentación detallada del proyecto
 ```

@@ -28,7 +28,7 @@ voz: "es-MX-JorgeNeural"         # voces gratis de Edge-TTS (acento neutro LATAM
 # IA para guiones (elige una)
 ia:
   proveedor: "ollama"            # ollama | openai | groq
-  modelo: "qwen3:8b"           # para ollama
+  modelo: "qwen2.5:14b"         # modelo de alta capacidad para guiones e investigación técnica
   # api_key: "tu-key"            # para openai/groq
   # base_url: "https://api.groq.com/openai/v1"
 

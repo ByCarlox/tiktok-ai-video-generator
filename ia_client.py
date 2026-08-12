@@ -76,9 +76,22 @@ def generar_guion(tema: str, duracion: int = 40, investigacion: dict = None) -> 
     )
     
     if ia["proveedor"] == "ollama":
+        try:
+            r = requests.post(
+                "http://localhost:11434/api/generate",
+                json={"model": ia["modelo"], "prompt": prompt, "stream": False},
+                timeout=120
+            )
+            res = r.json().get("response", "").strip()
+            if res:
+                return res
+        except Exception:
+            pass
+            
+        # Fallback a qwen3:8b si el modelo principal está descargando
         r = requests.post(
             "http://localhost:11434/api/generate",
-            json={"model": ia["modelo"], "prompt": prompt, "stream": False},
+            json={"model": "qwen3:8b", "prompt": prompt, "stream": False},
             timeout=120
         )
         return r.json().get("response", "").strip()

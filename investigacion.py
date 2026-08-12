@@ -36,12 +36,20 @@ def investigar_tema(tema: str) -> dict:
     response_text = ""
     try:
         if ia["proveedor"] == "ollama":
-            r = requests.post(
-                "http://localhost:11434/api/generate",
-                json={"model": ia["modelo"], "prompt": prompt, "stream": False, "format": "json"},
-                timeout=120
-            )
-            response_text = r.json().get("response", "").strip()
+            try:
+                r = requests.post(
+                    "http://localhost:11434/api/generate",
+                    json={"model": ia["modelo"], "prompt": prompt, "stream": False, "format": "json"},
+                    timeout=120
+                )
+                response_text = r.json().get("response", "").strip()
+            except Exception:
+                r = requests.post(
+                    "http://localhost:11434/api/generate",
+                    json={"model": "qwen3:8b", "prompt": prompt, "stream": False, "format": "json"},
+                    timeout=120
+                )
+                response_text = r.json().get("response", "").strip()
         else:
             base = ia.get("base_url", "https://api.openai.com/v1")
             headers = {}

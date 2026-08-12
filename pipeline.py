@@ -472,9 +472,9 @@ def paso_imagenes(prompts, work, n, tema=""):
                         tmp_img.unlink(missing_ok=True)
                         continue
                         
-                # Escalar exacto sólo si pasó la pre-evaluación
+                # Escalar exacto sólo si pasó la pre-evaluación (aplicar zoom cinematográfico Ken Burns)
                 run_ffmpeg(["ffmpeg", "-y", "-i", f"tmp_{i}.jpg",
-                            "-vf", f"scale={target_w}:{target_h}:force_original_aspect_ratio=increase,crop={target_w}:{target_h}",
+                            "-vf", f"scale={target_w}:{target_h}:force_original_aspect_ratio=increase,crop={target_w}:{target_h},setsar=1",
                             f"i{i}.jpg"], f"escalando {i}", cwd=work)
                 tmp_img.unlink(missing_ok=True)
                 rutas.append(f"i{i}.jpg")
@@ -485,7 +485,7 @@ def paso_imagenes(prompts, work, n, tema=""):
         if len(rutas) <= i:
             if (work / f"tmp_{i}.jpg").exists():
                 run_ffmpeg(["ffmpeg", "-y", "-i", f"tmp_{i}.jpg",
-                            "-vf", f"scale={target_w}:{target_h}:force_original_aspect_ratio=increase,crop={target_w}:{target_h}",
+                            "-vf", f"scale={target_w}:{target_h}:force_original_aspect_ratio=increase,crop={target_w}:{target_h},setsar=1",
                             f"i{i}.jpg"], f"escalando {i}", cwd=work)
                 (work / f"tmp_{i}.jpg").unlink(missing_ok=True)
                 rutas.append(f"i{i}.jpg")

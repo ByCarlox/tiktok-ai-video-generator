@@ -197,6 +197,28 @@ def filtrar_tendencias(trends: list, config: dict) -> list:
     
     return trends_filtrados
 
+def calcular_score_viralidad(tema: str) -> float:
+    """Calcula un puntaje de viralidad (0-100) basado en detonantes psicológicos y términos de alto impacto."""
+    score = 50.0
+    t_lower = tema.lower()
+    
+    # Detonantes de curiosidad e impacto positivo
+    triggers = {
+        "ia": 15, "ai": 15, "chatgpt": 15, "google": 12, "apple": 12, "nvidia": 15, "claude": 15,
+        "nuevo": 10, "nueva": 10, "gratis": 12, "futuro": 10, "cambia": 10, "secreto": 12,
+        "revolución": 10, "chip": 10, "ciencia": 8, "descubrimiento": 10, "dólares": 8, "usd": 8
+    }
+    for kw, val in triggers.items():
+        if kw in t_lower:
+            score += val
+            
+    # Penalizar títulos demasiado cortos o vagos
+    if len(tema.split()) < 4:
+        score -= 15.0
+        
+    return max(0.0, min(100.0, score))
+
+
 def main():
     config = cargar_config()
     print("🔍 Buscando tendencias tech/IA/ciencia para LATAM...")
@@ -219,7 +241,11 @@ def main():
     trends = filtrar_tendencias(trends, config)
     
     # Limpiar y deduplicar
-    trends = list(dict.fromkeys([t.strip() for t in trends if t]))[:20]
+    trends = list(dict.fromkeys([t.strip() for t in trends if t]))
+    
+    # Ordenar por Scoring de Viralidad (mayor potencia al principio)
+    trends.sort(key=lambda t: calcular_score_viralidad(t), reverse=True)
+    trends = trends[:20]
     
     salida = {
         "fecha": datetime.now().isoformat(),
@@ -230,9 +256,10 @@ def main():
     with open("output/trends.json", "w", encoding="utf-8") as f:
         json.dump(salida, f, ensure_ascii=False, indent=2)
     
-    print(f"✅ {len(trends)} tendencias guardadas (tech/IA/ciencia para LATAM)")
+    print(f"✅ {len(trends)} tendencias guardadas y ordenadas por Virality Score")
     for i, t in enumerate(trends[:8], 1):
-        print(f"   {i}. {t}")
+        score_v = calcular_score_viralidad(t)
+        print(f"   {i}. [{score_v:.0f}/100 🔥] {t}")
 
 if __name__ == "__main__":
     main()

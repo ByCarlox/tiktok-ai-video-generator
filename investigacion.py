@@ -34,25 +34,10 @@ def investigar_tema(tema: str) -> dict:
     prompt = PROMPT_INVESTIGACION_ESTRUCTURADA.format(tema=tema)
     
     response_text = ""
-    try:
-        if ia["proveedor"] == "ollama":
-            try:
-                r = requests.post(
-                    "http://localhost:11434/api/generate",
-                    json={"model": ia["modelo"], "prompt": prompt, "stream": False, "format": "json"},
-                    timeout=120
-                )
-                response_text = r.json().get("response", "").strip()
-            except Exception:
-                r = requests.post(
-                    "http://localhost:11434/api/generate",
-                    json={"model": "qwen3:8b", "prompt": prompt, "stream": False, "format": "json"},
-                    timeout=120
-                )
-                response_text = r.json().get("response", "").strip()
-        else:
-            base = ia.get("base_url", "https://api.openai.com/v1")
-            headers = {}
+    if ia["proveedor"] in ("openai", "groq", "nvidia"):
+        try:
+            base = ia.get("base_url", "https://integrate.api.nvidia.com/v1" if ia["proveedor"] == "nvidia" else "https://api.openai.com/v1")
+            headers = {"Content-Type": "application/json"}
             if "api_key" in ia:
                 headers["Authorization"] = f"Bearer {ia['api_key']}"
             r = requests.post(
@@ -61,15 +46,52 @@ def investigar_tema(tema: str) -> dict:
                 json={
                     "model": ia["modelo"],
                     "messages": [{"role": "user", "content": prompt}],
-                    "response_format": {"type": "json_object"}
+                    "temperature": 0.5
                 },
-                timeout=90
+                timeout=60
             )
-            response_text = r.json()["choices"][0]["message"]["content"].strip()
+            if r.status_code == 200:
+                response_text = r.json()["choices"][0]["message"]["content"].strip()
+        except Exception as e:
+            print(f"   ⚠️ Conexión con investigación de {ia['proveedor']} falló ({e}). Conmutando a Ollama local...")
+
+    if not response_text:
+        try:
+            r = requests.post(
+                "http://localhost:11434/api/generate",
+                json={"model": "qwen2.5:14b", "prompt": prompt, "stream": False, "format": "json"},
+                timeout=120
+            )
+            response_text = r.json().get("response", "").strip()
+        except Exception:
+            r = requests.post(
+                "http://localhost:11434/api/generate",
+                json={"model": "qwen3:8b", "prompt": prompt, "stream": False, "format": "json"},
+                timeout=120
+            )
+            response_text = r.json().get("response", "").strip()
             
-        data = json.loads(response_text)
+    try:
+        # Limpiar bloques markdown ```json ... ``` si el LLM los incluye
+        cleaned_text = response_text
+        if "```json" in cleaned_text:
+            cleaned_text = cleaned_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in cleaned_text:
+            cleaned_text = cleaned_text.split("```")[1].split("```")[0].strip()
+            
+        data = json.loads(cleaned_text)
         print("      ✅ Investigación completada (hechos científicos + mapa visual extraídos).")
         return data
+    except Exception as e:
+        print(f"   ⚠️ Error procesando JSON de investigación: {e}. Usando datos de respaldo.")
+        return {
+            "resumen_tecnico": tema,
+            "hechos_clave": [f"Avance reciente en {tema}", "Innovación comprobada", "Impacto relevante en USD"],
+            "terminologia_tecnica": ["tecnología", "innovación", "datos"],
+            "elementos_visuales": [f"Visual representations of {tema}"],
+            "queries_video_stock": [tema, "technology", "artificial intelligence"],
+            "angulo_viral": "revolución tecnológica"
+        }
     except Exception as e:
         print(f"      ⚠️ Error en investigación estructurada: {e}. Usando plantilla por defecto...")
         palabras_ingles = [w for w in tema.split() if len(w) > 4][:3]

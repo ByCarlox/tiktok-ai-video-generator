@@ -75,43 +75,48 @@ def generar_guion(tema: str, duracion: int = 40, investigacion: dict = None) -> 
         angulo=angulo
     )
     
-    if ia["proveedor"] == "ollama":
+    if ia["proveedor"] in ("openai", "groq", "nvidia"):
         try:
+            base = ia.get("base_url", "https://integrate.api.nvidia.com/v1" if ia["proveedor"] == "nvidia" else "https://api.openai.com/v1")
+            headers = {"Content-Type": "application/json"}
+            if "api_key" in ia:
+                headers["Authorization"] = f"Bearer {ia['api_key']}"
             r = requests.post(
-                "http://localhost:11434/api/generate",
-                json={"model": ia["modelo"], "prompt": prompt, "stream": False},
-                timeout=120
+                f"{base}/chat/completions",
+                headers=headers,
+                json={
+                    "model": ia["modelo"],
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.7
+                },
+                timeout=60
             )
-            res = r.json().get("response", "").strip()
-            if res:
-                return res
-        except Exception:
-            pass
+            if r.status_code == 200:
+                content = r.json()["choices"][0]["message"]["content"].strip()
+                if content:
+                    return content
+        except Exception as e:
+            print(f"   ⚠️ Conexión con {ia['proveedor']} falló ({e}). Conmutando a Ollama local...")
             
-        # Fallback a qwen3:8b si el modelo principal está descargando
+    # Fallback local a Ollama (qwen2.5:14b o qwen3:8b)
+    try:
         r = requests.post(
             "http://localhost:11434/api/generate",
-            json={"model": "qwen3:8b", "prompt": prompt, "stream": False},
+            json={"model": "qwen2.5:14b", "prompt": prompt, "stream": False},
             timeout=120
         )
-        return r.json().get("response", "").strip()
-    
-    elif ia["proveedor"] in ("openai", "groq"):
-        base = ia.get("base_url", "https://api.openai.com/v1")
-        headers = {}
-        if "api_key" in ia:
-            headers["Authorization"] = f"Bearer {ia['api_key']}"
-        r = requests.post(
-            f"{base}/chat/completions",
-            headers=headers,
-            json={
-                "model": ia["modelo"],
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.7
-            },
-            timeout=60
-        )
-        return r.json()["choices"][0]["message"]["content"].strip()
+        res = r.json().get("response", "").strip()
+        if res:
+            return res
+    except Exception:
+        pass
+
+    r = requests.post(
+        "http://localhost:11434/api/generate",
+        json={"model": "qwen3:8b", "prompt": prompt, "stream": False},
+        timeout=120
+    )
+    return r.json().get("response", "").strip()
     
     return ""
 

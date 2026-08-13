@@ -27,10 +27,10 @@ voz: "es-MX-JorgeNeural"         # voces gratis de Edge-TTS (acento neutro LATAM
 
 # IA para guiones (elige una)
 ia:
-  proveedor: "ollama"            # ollama | openai | groq
-  modelo: "qwen2.5:14b"         # modelo de alta capacidad para guiones e investigación técnica
-  # api_key: "tu-key"            # para openai/groq
-  # base_url: "https://api.groq.com/openai/v1"
+  proveedor: "nvidia"            # nvidia (nube gratis 70B) | ollama (local) | openai | groq
+  modelo: "meta/llama-3.1-70b-instruct"         # modelo masivo 70B gratis en supercomputador NVIDIA NIM
+  api_key: "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"
+  base_url: "https://integrate.api.nvidia.com/v1"
 
 # IA para imágenes (elige una)
 imagenes:

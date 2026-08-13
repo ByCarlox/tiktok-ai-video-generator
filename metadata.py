@@ -87,20 +87,10 @@ def generar_metadata(tema, guion, video_path, indice):
     prompt = PROMPT_METADATA.format(tema=tema, guion=guion)
     
     response_text = ""
-    if ia["proveedor"] == "ollama":
+    if ia["proveedor"] in ("openai", "groq", "nvidia"):
         try:
-            r = requests.post(
-                "http://localhost:11434/api/generate",
-                json={"model": ia["modelo"], "prompt": prompt, "stream": False, "format": "json"},
-                timeout=120
-            )
-            response_text = r.json().get("response", "").strip()
-        except Exception as e:
-            print(f"⚠️ Error llamando a Ollama: {e}")
-    else:
-        try:
-            base = ia.get("base_url", "https://api.openai.com/v1")
-            headers = {}
+            base = ia.get("base_url", "https://integrate.api.nvidia.com/v1" if ia["proveedor"] == "nvidia" else "https://api.openai.com/v1")
+            headers = {"Content-Type": "application/json"}
             if "api_key" in ia:
                 headers["Authorization"] = f"Bearer {ia['api_key']}"
             r = requests.post(
@@ -109,13 +99,30 @@ def generar_metadata(tema, guion, video_path, indice):
                 json={
                     "model": ia["modelo"],
                     "messages": [{"role": "user", "content": prompt}],
-                    "response_format": {"type": "json_object"}
+                    "temperature": 0.5
                 },
+                timeout=60
+            )
+            if r.status_code == 200:
+                response_text = r.json()["choices"][0]["message"]["content"].strip()
+        except Exception as e:
+            print(f"   ⚠️ Conexión de metadatos con {ia['proveedor']} falló ({e}). Conmutando a Ollama local...")
+
+    if not response_text:
+        try:
+            r = requests.post(
+                "http://localhost:11434/api/generate",
+                json={"model": "qwen2.5:14b", "prompt": prompt, "stream": False, "format": "json"},
                 timeout=120
             )
-            response_text = r.json()["choices"][0]["message"]["content"].strip()
-        except Exception as e:
-            print(f"⚠️ Error llamando a API externa: {e}")
+            response_text = r.json().get("response", "").strip()
+        except Exception:
+            r = requests.post(
+                "http://localhost:11434/api/generate",
+                json={"model": "qwen3:8b", "prompt": prompt, "stream": False, "format": "json"},
+                timeout=120
+            )
+            response_text = r.json().get("response", "").strip()
 
     meta = {}
     try:

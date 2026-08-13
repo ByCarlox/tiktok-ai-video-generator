@@ -829,12 +829,23 @@ async def procesar_tema(tema, indice):
             publicar_video(salida, meta)
             
         print(f"\n   🎉 LISTO: {salida}")
+        saneamiento_automatico(work)
         return salida
     except Exception as e:
         print(f"   ❌ ERROR: {e}")
         import traceback
         traceback.print_exc()
         return None
+
+def saneamiento_automatico(work):
+    """Elimina automáticamente archivos temporales de trabajo (frames, audios intermedios, concatenaciones) tras finalizar el renderizado."""
+    try:
+        work_path = Path(work)
+        if work_path.exists():
+            shutil.rmtree(work_path, ignore_errors=True)
+            print("   🧹 Saneamiento automático: carpeta temporal de trabajo eliminada.")
+    except Exception as e:
+        print(f"   ⚠️ Saneamiento de trabajo omitido: {e}")
 
 async def main():
     config = cfg()
@@ -856,7 +867,10 @@ async def main():
     for i, t in enumerate(trends, 1):
         if await procesar_tema(t, i):
             ok += 1
-    print(f"\n✅ {ok}/{len(trends)} videos listos en {config['salida_videos']}/")
+            
+    # Saneamiento final de la carpeta de trabajo general
+    saneamiento_automatico("output/work")
+    print(f"\n✅ {ok}/{len(trends)} videos listos en {config['salida_videos']}/ (Entorno saneado y limpio)")
 
 if __name__ == "__main__":
     asyncio.run(main())

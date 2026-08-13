@@ -19,10 +19,10 @@ categorias:                      # temas que le gustan al algoritmo
 numero_videos: 3                 # cuántos videos generar por corrida
 duracion_max_segundos: 45
 resolucion: "4k"                 # "4k" (2160x3840) o "1080p" (1080x1920)
-calidad_crf: 15                  # CRF de FFmpeg (15 = ultra calidad, 20 = estándar)
+calidad_crf: 14                  # CRF de FFmpeg (14 = ultra alta fidelidad 4K)
 moneda: "USD"                    # siempre hablar en dólares para audiencia LATAM
 
-voz: "es-MX-JorgeNeural"         # voces gratis de Edge-TTS (acento neutro LATAM)
+voz: "es-US-AlonsoNeural"        # voz neutra panlatina hiper-expresiva de alta calidad (tech/ciencia)
 # otras buenas: es-ES-AlvaroNeural, es-MX-JorgeNeural, es-AR-ElenaNeural
 
 # IA para guiones (elige una)

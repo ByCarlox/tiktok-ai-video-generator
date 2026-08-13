@@ -302,12 +302,10 @@ def sanear_guion(texto, max_palabras):
     texto = re.sub(r"\b\d{1,2}:\d{2}\b", " ", texto)
     texto = re.sub(r"\s+", " ", texto).strip()
     palabras = texto.split()
-    if len(palabras) > max_palabras:
-        texto = " ".join(palabras[:max_palabras])
-        corte = max(texto.rfind(". "), texto.rfind("! "), texto.rfind("? "))
-        if corte > len(texto) // 2:
-            texto = texto[:corte + 1]
-    return texto.strip()
+    texto = texto.strip()
+    if texto and not texto[-1] in ".!?":
+        texto += "."
+    return texto
 
 # ---------- 2. TARJETA DE HOOK (primeros 2.5s) ----------
 def crear_tarjeta_hook(texto, ruta):
@@ -346,16 +344,24 @@ def crear_tarjeta_hook(texto, ruta):
     img.save(ruta, quality=95)
     return ruta
 
-# ---------- 3. VOZ (texto plano, sin SSML) ----------
+# ---------- 3. VOZ PRO ----------
 async def paso_voz(texto, audio, voz):
-    print("   🎙️  Generando voz...")
-    comm = edge_tts.Communicate(texto, voz, rate="+6%")
+    print(f"   🎙️  Generando voz de alta definición ({voz})...")
+    comm = edge_tts.Communicate(texto, voz, rate="+7%", pitch="+2Hz")
     raw = audio.parent / "raw.mp3"
     await comm.save(str(raw))
+    # Ecualización y compresión dinámica para voz limpia estilo podcast/TikTok
+    af_filter = (
+        "highpass=f=85,lowpass=f=11500,"
+        "equalizer=f=300:width_type=h:width=200:g=-3,"
+        "equalizer=f=3000:width_type=h:width=1000:g=3,"
+        "compand=attacks=0.03:decays=0.3:points=-80/-80|-45/-25|-20/-10|0/-3,"
+        "loudnorm=I=-15:TP=-1.5:LRA=10"
+    )
     run_ffmpeg(["ffmpeg", "-y", "-i", str(raw.name),
-                "-af", "loudnorm=I=-16:TP=-1.5:LRA=11,highpass=f=80,lowpass=f=12000",
-                "-ar", "44100", "-b:a", "192k", audio.name],
-               "normalizando voz", cwd=audio.parent)
+                "-af", af_filter,
+                "-ar", "44100", "-b:a", "256k", audio.name],
+               "masterizando voz", cwd=audio.parent)
     raw.unlink(missing_ok=True)
 
 # ---------- 4. SUBTÍTULOS ----------

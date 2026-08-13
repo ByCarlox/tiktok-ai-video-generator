@@ -8,8 +8,8 @@ def cargar_config():
     with open("config.yaml", "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
-PROMPT_GUION = """Eres un divulgador y creador viral de TikTok especializado en ciencia, tecnología e inteligencia artificial.
-Crea un guion educativo de {duracion} segundos sobre el tema: "{tema}".
+PROMPT_GUION = """Eres un divulgador y guionista viral experto en tecnología, ciencia e inteligencia artificial para TikTok y Reels.
+Crea un guion impecable de {duracion} segundos sobre el tema: "{tema}".
 
 DATOS DE INVESTIGACIÓN TÉCNICA ESTRUCTURADA:
 - Resumen Técnico: {resumen_tecnico}
@@ -17,27 +17,20 @@ DATOS DE INVESTIGACIÓN TÉCNICA ESTRUCTURADA:
 - Términos Clave: {terminologia}
 - Enfoque Narrativo: {angulo}
 
-REGLAS ESTRICTAS:
-- Gancho brutal en los primeros 2 segundos (que detenga el scroll).
-- Lenguaje simple, fascinante, pero con alta rigurosidad científica y precisión.
-- Estructura la historia alrededor de los hechos técnicos investigados.
-- Cierre con frase memorable y llamado a la acción suave.
-- NADA de contenido sexual, violento, odio, marcas registradas protegidas, ni desinformación.
+REGLAS NARRATIVAS DE ALTA CONVERSIÓN:
+- Gancho disruptivo en las primeras 5 palabras (debe congelar el scroll al instante).
+- Historia dividida en 3 actos fluidos: Gancho -> 2 a 3 datos impactantes en USD/cifras -> Cierre de alto valor + CTA sutil.
+- Puntuación PERFECTA: Usa puntos y comas de forma estratégica para dictar el ritmo y las pausas naturales de la voz.
+- Lenguaje fascinante, claro y 100% riguroso. Cada oración debe estar completa y terminar en punto.
 
 REGLAS DE IDIOMA Y AUDIENCIA:
-- Usa español NEUTRO latinoamericano (sin modismos ni regionalismos).
-- NO menciones países específicos a menos que sea parte del dato histórico.
-- Si mencionas valores o precios, usa SIEMPRE dólares (USD).
-- Tu audiencia es toda Latinoamérica.
+- Español NEUTRO panlatino (sin modismos ni regionalismos).
+- Todas las cifras o referencias económicas deben estar expresadas en dólares estadounidenses (USD).
 
-REGLAS DE FORMATO IMPRESCINDIBLES:
-- Devuelve exclusivamente el texto que debe ser leído en voz alta.
-- NO incluyas introducciones, preámbulos, saludos ni comentarios.
-- NO incluyas etiquetas de sección como "HOOK:", "NARRADOR:", "VISUAL:".
-- NO incluyas acotaciones entre corchetes [...] ni paréntesis (...).
-- NO uses formato markdown (nada de negritas o numerales).
-
-Solo devuelve el texto listo para ser leído."""
+REGLAS DE FORMATO LIMPIO:
+- Devuelve exclusivamente el texto final que será narrado en voz alta.
+- PROHIBIDO incluir encabezados, etiquetas ("HOOK:", "NARRADOR:"), paréntesis, corchetes o símbolos markdown (#, *, _).
+- PROHIBIDO dejar oraciones inconclusas o cortar el texto a la mitad."""
 
 PROMPT_IMAGENES = """Genera 4 prompts en inglés para imágenes verticales 9:16 sobre este tema de TikTok: "{tema}".
 

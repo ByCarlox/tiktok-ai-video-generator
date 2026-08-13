@@ -103,22 +103,30 @@ def generar_guion(tema: str, duracion: int = 40, investigacion: dict = None) -> 
         r = requests.post(
             "http://localhost:11434/api/generate",
             json={"model": "qwen2.5:14b", "prompt": prompt, "stream": False},
-            timeout=120
+            timeout=30
         )
-        res = r.json().get("response", "").strip()
-        if res:
-            return res
+        if r.status_code == 200:
+            res = r.json().get("response", "").strip()
+            if res:
+                return res
     except Exception:
         pass
 
-    r = requests.post(
-        "http://localhost:11434/api/generate",
-        json={"model": "qwen3:8b", "prompt": prompt, "stream": False},
-        timeout=120
-    )
-    return r.json().get("response", "").strip()
-    
-    return ""
+    try:
+        r = requests.post(
+            "http://localhost:11434/api/generate",
+            json={"model": "qwen3:8b", "prompt": prompt, "stream": False},
+            timeout=30
+        )
+        if r.status_code == 200:
+            res = r.json().get("response", "").strip()
+            if res:
+                return res
+    except Exception:
+        pass
+        
+    print("   ⚠️ Todas las llamadas de IA fallaron. Usando plantilla de guion de emergencia.")
+    return f"¿Sabías esto sobre {tema}? Los últimos datos demuestran un avance revolucionario con un impacto directo en dólares USD. La tecnología sigue transformando nuestro mundo a pasos agigantados. Síguenos para descubrir más noticias e innovaciones hoy mismo."
 
 
 def generar_prompts_imagenes(tema: str) -> list:

@@ -113,16 +113,24 @@ def generar_metadata(tema, guion, video_path, indice):
             r = requests.post(
                 "http://localhost:11434/api/generate",
                 json={"model": "qwen2.5:14b", "prompt": prompt, "stream": False, "format": "json"},
-                timeout=120
+                timeout=30
             )
-            response_text = r.json().get("response", "").strip()
+            if r.status_code == 200:
+                response_text = r.json().get("response", "").strip()
         except Exception:
+            pass
+
+    if not response_text:
+        try:
             r = requests.post(
                 "http://localhost:11434/api/generate",
                 json={"model": "qwen3:8b", "prompt": prompt, "stream": False, "format": "json"},
-                timeout=120
+                timeout=30
             )
-            response_text = r.json().get("response", "").strip()
+            if r.status_code == 200:
+                response_text = r.json().get("response", "").strip()
+        except Exception:
+            pass
 
     meta = {}
     try:

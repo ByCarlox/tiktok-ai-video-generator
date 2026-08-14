@@ -22,8 +22,8 @@ resolucion: "4k"                 # "4k" (2160x3840) o "1080p" (1080x1920)
 calidad_crf: 14                  # CRF de FFmpeg (14 = ultra alta fidelidad 4K)
 moneda: "USD"                    # siempre hablar en dólares para audiencia LATAM
 
-voz: "es-US-AlonsoNeural"        # voz neutra panlatina hiper-expresiva de alta calidad (tech/ciencia)
-# otras buenas: es-ES-AlvaroNeural, es-MX-JorgeNeural, es-AR-ElenaNeural
+voz: "es-MX-DaliaNeural"        # Voz dulce, juvenil y super expresiva estilo VTuber Kawaii
+# otras excelentes: es-CO-SalomeNeural, es-ES-ElviraNeural, es-US-AlonsoNeural
 
 # IA para guiones (elige una)
 ia:
@@ -35,11 +35,11 @@ ia:
 imagenes:
   proveedor: "pollinations"      # pollinations (gratis) | stability | replicate
 
-# Presentador Virtual Faceless (renderizado en GPU RTX 5090)
+# Presentadora Virtual Kawaii Waifu / VTuber (renderizado en GPU RTX 5090)
 avatar_presentador:
-  activado: true                 # Genera un presentador virtual para el hook inicial del video
+  activado: true                 # Genera la presentadora virtual para el hook y badge en esquina
   host: "http://100.x.y.z:8188"  # Endpoint de ComfyUI en tu servidor
-  estilo: "cyber_host"           # cyber_host | minimal_silhouette
+  estilo: "kawaii_waifu"         # kawaii_waifu | cyber_host
 
 # Compositor Anti-Stretch (Cero deformación en imágenes 16:9 o 1:1)
 compositor:

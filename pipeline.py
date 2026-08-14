@@ -1005,7 +1005,8 @@ async def procesar_tema(tema, indice):
                 intro_host_clip = work / "v_intro_host.mp4"
                 if not intro_host_clip.exists():
                     host_host = config.get("avatar_presentador", {}).get("host", "http://100.95.107.65:8188")
-                    host_ok = generar_avatar_en_rtx5090(avatar_host_img, host=host_host, tema=tema)
+                    estilo_avatar = config.get("avatar_presentador", {}).get("estilo", "kawaii_waifu")
+                    host_ok = generar_avatar_en_rtx5090(avatar_host_img, host=host_host, tema=tema, estilo=estilo_avatar)
                     if host_ok:
                         # Animar con sincronización de voz y gesticulación del visor (3.5s)
                         ok_intro = generar_clip_avatar_lipsync(avatar_host_img, work / "a_voz.mp3", intro_host_clip, duracion_max=3.5)

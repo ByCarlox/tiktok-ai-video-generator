@@ -155,52 +155,70 @@ def crear_clip_intro_presentador(avatar_img_path: Path, output_clip: Path, durac
         print(f"      ⚠️ Error creando clip de intro de presentadora: {e}")
         return False
 
-def crear_badge_presentador_flotante(avatar_img_path: Path, output_png: Path, size: int = 240) -> bool:
-    """Crea un badge circular transparente con aura brillante para colocar en esquina (PIP)."""
-    return crear_overlay_pip_avatar_animado(avatar_img_path, output_png, size=size)
-
-def crear_overlay_pip_avatar_animado(avatar_img_path: Path, output_png: Path, size: int = 280, halo_color=(255, 105, 180)) -> bool:
-    """Crea una insignia PIP circular futurista con la Waifu en 3D, anillo de neón sakura pink y etiqueta '♥ AI WAIFU'."""
+def crear_video_pip_badge_animado(video_source_path: Path, output_pip_video: Path, duracion_total: float = 40.0, size: int = 280) -> bool:
+    """
+    Toma el clip de video animado de la Waifu y lo transforma en un Badge Circular PIP Animado
+    continuo en bucle con anillo de neón rosa y canal alfa para la esquina del video.
+    """
+    output_pip_video = Path(output_pip_video)
+    output_pip_video.parent.mkdir(parents=True, exist_ok=True)
+    
+    if not video_source_path.exists():
+        return False
+        
     try:
-        with Image.open(avatar_img_path) as orig:
-            img = orig.convert("RGBA")
-            w, h = img.size
-            crop_size = min(w, int(h * 0.45))
-            left = (w - crop_size) // 2
-            top = int(h * 0.08)  # Enfoque en rostro y auriculares de gato
-            cropped = img.crop((left, top, left + crop_size, top + crop_size))
-            cropped = cropped.resize((size, size), Image.Resampling.LANCZOS)
-            
-            # Máscara circular
-            mask = Image.new("L", (size, size), 0)
-            draw_m = ImageDraw.Draw(mask)
-            draw_m.ellipse((8, 8, size - 8, size - 8), fill=255)
-            
-            badge_canvas = Image.new("RGBA", (size + 40, size + 60), (0, 0, 0, 0))
-            draw_b = ImageDraw.Draw(badge_canvas)
-            
-            # Sombra profunda
-            draw_b.ellipse((16, 20, size + 24, size + 28), fill=(0, 0, 0, 180))
-            badge_canvas = badge_canvas.filter(ImageFilter.GaussianBlur(radius=8))
-            draw_b = ImageDraw.Draw(badge_canvas)
-            
-            # Anillo de neón rosa sakura / lavanda
-            draw_b.ellipse((16, 16, size + 24, size + 24), outline=halo_color, width=4)
-            
-            # Pegar el avatar circular
-            avatar_circ = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-            avatar_circ.paste(cropped, (0, 0), mask)
-            badge_canvas.paste(avatar_circ, (20, 20), mask)
-            
-            # Etiqueta "♥ AI WAIFU"
-            lbl_w, lbl_h = 120, 28
-            lbl_x = (size + 40 - lbl_w) // 2
-            lbl_y = size + 16
-            draw_b.rounded_rectangle([lbl_x, lbl_y, lbl_x + lbl_w, lbl_y + lbl_h], radius=8, fill=(25, 15, 35, 230), outline=(255, 105, 180), width=2)
-            draw_b.ellipse([lbl_x + 8, lbl_y + 8, lbl_x + 18, lbl_y + 18], fill=(255, 60, 150, 255))
-            
-            badge_canvas.save(output_png, "PNG")
+        work_dir = output_pip_video.parent
+        mask_png = work_dir / "pip_circ_mask.png"
+        ring_png = work_dir / "pip_neon_ring.png"
+        
+        # 1. Máscara circular
+        mask = Image.new("L", (size, size), 0)
+        d_m = ImageDraw.Draw(mask)
+        d_m.ellipse((8, 8, size - 8, size - 8), fill=255)
+        mask.save(mask_png)
+        
+        # 2. Anillo de Neón con etiqueta "♥ AI WAIFU"
+        ring_canvas = Image.new("RGBA", (size + 40, size + 60), (0, 0, 0, 0))
+        d_r = ImageDraw.Draw(ring_canvas)
+        # Sombra
+        d_r.ellipse((16, 20, size + 24, size + 28), fill=(0, 0, 0, 180))
+        ring_canvas = ring_canvas.filter(ImageFilter.GaussianBlur(radius=6))
+        d_r = ImageDraw.Draw(ring_canvas)
+        # Anillo rosa neón
+        d_r.ellipse((16, 16, size + 24, size + 24), outline=(255, 105, 180), width=4)
+        # Etiqueta
+        lbl_w, lbl_h = 120, 28
+        lbl_x = (size + 40 - lbl_w) // 2
+        lbl_y = size + 16
+        d_r.rounded_rectangle([lbl_x, lbl_y, lbl_x + lbl_w, lbl_y + lbl_h], radius=8, fill=(25, 15, 35, 230), outline=(255, 105, 180), width=2)
+        d_r.ellipse([lbl_x + 8, lbl_y + 8, lbl_x + 18, lbl_y + 18], fill=(255, 60, 150, 255))
+        ring_canvas.save(ring_png)
+        
+        # 3. Componer Video con QuickTime Animation (canal alfa intacto)
+        fc = (
+            f"[0:v]crop=min(iw\\,ih*0.5):min(iw\\,ih*0.5):iw/2-min(iw\\,ih*0.5)/2:ih*0.08,scale={size}:{size}[v_sq];"
+            f"[v_sq][1:v]alphamerge[v_circ];"
+            f"[2:v][v_circ]overlay=20:20[outv]"
+        )
+        cmd = [
+            "ffmpeg", "-y",
+            "-stream_loop", "-1", "-i", str(video_source_path.resolve()),
+            "-loop", "1", "-i", str(mask_png.resolve()),
+            "-loop", "1", "-i", str(ring_png.resolve()),
+            "-filter_complex", fc,
+            "-map", "[outv]",
+            "-t", f"{duracion_total:.2f}",
+            "-c:v", "qtrle",
+            str(output_pip_video.resolve())
+        ]
+        res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        mask_png.unlink(missing_ok=True)
+        ring_png.unlink(missing_ok=True)
+        
+        if output_pip_video.exists() and output_pip_video.stat().st_size > 1000:
+            print(f"      🌸 Badge PIP de Video Animado generado ({output_pip_video.stat().st_size // 1024} KB).")
             return True
     except Exception as e:
-        print(f"      ⚠️ Error creando badge PIP: {e}")
-        return False
+        print(f"      ⚠️ Error creando video badge PIP: {e}")
+        
+    return False

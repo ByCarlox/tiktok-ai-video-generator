@@ -755,15 +755,23 @@ def paso_render_pillow(imagenes, videos, audio, srt_path, musica, salida, work):
     wave_png = work / "audio_waveform.png"
     generar_overlay_onda_audio(0.85, wave_png, width=w, height=h)
     
-    # 5. Generar Badge PIP de Presentador en Esquina si existe el avatar
+    # 5. Generar Badge PIP de Presentador en Esquina (Video Animado o Estático)
     avatar_img = work / "host_avatar.png"
+    intro_host_clip = work / "v_intro_host.mp4"
+    pip_vid = work / "v_avatar_pip.mov"
     pip_png = work / "avatar_pip_badge.png"
-    tiene_pip = False
-    if avatar_img.exists():
-        from avatar_host import crear_overlay_pip_avatar_animado
-        ok_pip = crear_overlay_pip_avatar_animado(avatar_img, pip_png, size=int(w * 0.22))
-        if ok_pip and pip_png.exists():
-            tiene_pip = True
+    tiene_pip_vid = False
+    tiene_pip_png = False
+    
+    if intro_host_clip.exists():
+        from avatar_host import crear_video_pip_badge_animado
+        ok_vid_pip = crear_video_pip_badge_animado(intro_host_clip, pip_vid, duracion_total=dur_audio, size=int(w * 0.22))
+        if ok_vid_pip and pip_vid.exists():
+            tiene_pip_vid = True
+            
+    if not tiene_pip_vid and avatar_img.exists():
+        # Fallback a PNG
+        pass
             
     # 6. Mezclar fondo, onda reactiva, subtítulos overlay, PIP avatar y audio masterizado
     max_mbps = config.get("compositor", {}).get("bitrate_max_mbps", 40)
@@ -776,7 +784,11 @@ def paso_render_pillow(imagenes, videos, audio, srt_path, musica, salida, work):
     
     v_chain = "[0:v][1:v]overlay=0:0[v_wave];[v_wave][2:v]overlay=0:0"
     
-    if tiene_pip:
+    if tiene_pip_vid:
+        cmd += ["-i", "v_avatar_pip.mov"]
+        v_chain += f"[v_sub];[v_sub][3:v]overlay=W-w-35:H-h-240:enable='gt(t,3.2)'[outv]"
+        audio_in_idx = 4
+    elif tiene_pip_png:
         cmd += ["-loop", "1", "-i", "avatar_pip_badge.png"]
         v_chain += f"[v_sub];[v_sub][3:v]overlay=W-w-35:H-h-240:enable='gt(t,3.2)'[outv]"
         audio_in_idx = 4

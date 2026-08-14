@@ -53,9 +53,12 @@ fotos_reales:
   cantidad_maxima: 3
 
 video_ia:
-  proveedor: "comfyui_remote"    # comfyui_remote (GPU Remota vía Tailscale) | stock_multi_fuente (fallback)
+  proveedor: "comfyui_remote"    # comfyui_remote (GPU RTX 5090 vía Tailscale) | stock_multi_fuente (fallback)
   host_remoto: "http://100.x.y.z:8188"
-  modelo: "ltx_video"            # ltx_video | hunyuan_video | cogvideox
+  modelo: "wan2.1"               # wan2.1 (Alibaba SOTA 14B) | hunyuan_video | ltx_video
+  modo_generacion: "t2v_and_i2v" # Text-to-Video y Image-to-Video
+  resolucion_video: "720x1280"   # 9:16 Vertical Nativo
+  frames_video: 81               # 81 frames (~3.5 a 4.5 seg de video fluido a 24fps)
 
 obsidian_vault: "TikTok-AI-Passive"
 salida_videos: "output/videos"

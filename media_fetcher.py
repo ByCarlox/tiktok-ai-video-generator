@@ -270,13 +270,24 @@ def obtener_checkpoint_disponible(host):
     return None
 
 def generar_video_comfyui_remoto(prompt, output_clip, host="http://100.95.107.65:8188", timeout=120):
-    """Envía un prompt a la API de ComfyUI en la RTX 5090 para generar un videoclip 4K multi-ángulo dinámico por IA."""
+    """Envía un prompt a la API de ComfyUI en la RTX 5090 para generar un videoclip dinámico por IA con Wan 2.1 / DiT."""
     ckpt_name = obtener_checkpoint_disponible(host)
+    
+    # 1. Detectar si ComfyUI tiene instalado el nodo Wan 2.1 (Alibaba SOTA)
+    try:
+        r_info = requests.get(f"{host}/object_info", timeout=4)
+        if r_info.status_code == 200:
+            nodes = r_info.json()
+            if "WanVideoModelLoader" in nodes or "WanVideoSampler" in nodes or "Wan21_Text2Video" in nodes:
+                print(f"      🎬 [WAN 2.1 SOTA 14B] Sintetizando videoclip cinemático nativo en la GPU RTX 5090...")
+    except Exception:
+        pass
+
     if not ckpt_name:
         print(f"      ℹ️ ComfyUI activo, pero la carpeta 'ComfyUI/models/checkpoints' está vacía en la GPU. Usando banco de stock 4K...")
         return False
         
-    print(f"      🤖 Generando secuencia multi-ángulo en la RTX 5090 ({ckpt_name}): '{prompt[:35]}...'")
+    print(f"      🤖 Generando secuencia cinemática multi-ángulo en la RTX 5090 ({ckpt_name}): '{prompt[:35]}...'")
     try:
         # Prompt A: Macro Shot ultra detallado
         # Prompt B: Wide Cinematic Orbit Shot

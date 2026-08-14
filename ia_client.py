@@ -170,7 +170,7 @@ def generar_prompts_imagenes(tema: str) -> list:
             host = ia.get("host_remoto", "http://100.95.107.65:11434") if ia["proveedor"] == "ollama_remote" else "http://localhost:11434"
             r = requests.post(
                 f"{host}/api/generate",
-                json={"model": ia["modelo"], "prompt": prompt, "stream": False, "format": "json"},
+                json={"model": ia["modelo"], "prompt": prompt, "stream": False},
                 timeout=90
             )
             data = extraer_json_valido(r.json().get("response", "{}"))
@@ -226,7 +226,7 @@ def generar_prompts_para_guion(guion: str, n: int, investigacion: dict = None) -
             host = ia.get("host_remoto", "http://100.95.107.65:11434") if ia["proveedor"] == "ollama_remote" else "http://localhost:11434"
             r = requests.post(
                 f"{host}/api/generate",
-                json={"model": ia["modelo"], "prompt": prompt, "stream": False, "format": "json"},
+                json={"model": ia["modelo"], "prompt": prompt, "stream": False},
                 timeout=90
             )
             data = extraer_json_valido(r.json().get("response", "{}"))

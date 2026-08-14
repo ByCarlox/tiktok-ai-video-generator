@@ -92,7 +92,7 @@ def generar_metadata(tema, guion, video_path, indice):
         try:
             r = requests.post(
                 f"{host}/api/generate",
-                json={"model": ia["modelo"], "prompt": prompt, "stream": False, "format": "json"},
+                json={"model": ia["modelo"], "prompt": prompt, "stream": False},
                 timeout=90
             )
             if r.status_code == 200:

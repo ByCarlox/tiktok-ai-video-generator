@@ -87,3 +87,36 @@ def componer_smart_backdrop(imagen_input: Path, imagen_output: Path, width: int 
     except Exception as e:
         print(f"      ⚠️ Error en composición smart backdrop: {e}")
         return False
+
+def generar_overlay_onda_audio(amplitud: float, output_path: Path, width: int = 1080, height: int = 1920, num_barras: int = 28) -> bool:
+    """Genera una barra visualizadora de audio reactiva y transparente en la parte inferior con brillo neón cian."""
+    try:
+        img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(img)
+        
+        bar_w = int(width * 0.018)
+        gap = int(width * 0.008)
+        total_w = num_barras * bar_w + (num_barras - 1) * gap
+        start_x = (width - total_w) // 2
+        base_y = int(height * 0.88)
+        
+        for i in range(num_barras):
+            # Altura reactiva con curva senoidal
+            factor = math.sin((i / num_barras) * math.pi)
+            h_bar = int(12 + (amplitud * 90 * factor) + (math.sin(i * 1.5 + amplitud * 10) * 8))
+            x0 = start_x + i * (bar_w + gap)
+            y0 = base_y - h_bar
+            x1 = x0 + bar_w
+            y1 = base_y
+            
+            # Gradiente de color Neón Cian a Dorado
+            color = (0, 240, 255, int(160 + amplitud * 95)) if i % 2 == 0 else (255, 230, 0, int(150 + amplitud * 100))
+            draw.rounded_rectangle([x0, y0, x1, y1], radius=4, fill=color)
+            
+        # Brillo suave
+        glow = img.filter(ImageFilter.GaussianBlur(radius=5))
+        final_img = Image.alpha_composite(glow, img)
+        final_img.save(output_path, "PNG")
+        return True
+    except Exception as e:
+        return False

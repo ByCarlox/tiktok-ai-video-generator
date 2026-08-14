@@ -21,8 +21,10 @@ from qa_review import revisar_video, MAX_REINTENTOS, evaluar_asset_imagen, evalu
 from investigacion import investigar_tema
 from media_fetcher import obtener_clips_multi_fuente, obtener_clips_multi_fuente_hibrido
 from product_fetcher import obtener_imagenes_producto_real
-from compositor import componer_smart_backdrop
+from compositor import componer_smart_backdrop, generar_overlay_onda_audio
+from product_3d import componer_tarjeta_3d_glassmorphism, crear_clip_producto_3d_flotante
 from avatar_host import generar_avatar_en_rtx5090, crear_clip_intro_presentador
+from lip_sync import generar_clip_avatar_lipsync
 import trends as trends_module
 
 FPS = 30
@@ -561,16 +563,19 @@ def paso_imagenes(prompts, work, n, tema="", investigacion=None):
     
     rutas = []
     
-    # 1. Obtener fotos reales del producto verídico si está activado
+    # 1. Obtener fotos reales del producto verídico y crear tarjetas 3D Glassmorphism
     if config.get("fotos_reales", {}).get("activado", True):
         max_reales = config.get("fotos_reales", {}).get("cantidad_maxima", 3)
         fotos_reales = obtener_imagenes_producto_real(tema, investigacion, work, cantidad=max_reales)
         for idx_r, f_real in enumerate(fotos_reales):
             salida_comp = work / f"i{len(rutas)}.jpg"
-            ok = componer_smart_backdrop(f_real, salida_comp, width=target_w, height=target_h)
+            # Componer tarjeta 3D de cristal esmerilado con aura neón
+            ok = componer_tarjeta_3d_glassmorphism(f_real, salida_comp, width=target_w, height=target_h)
+            if not ok:
+                ok = componer_smart_backdrop(f_real, salida_comp, width=target_w, height=target_h)
             if ok:
                 rutas.append(f"i{len(rutas)}.jpg")
-                print(f"      🖼️ [Hero Product {idx_r + 1}] Composición Anti-Stretch lista (Aspecto 100% Nativo + Fondo Blur).")
+                print(f"      💎 [Hero Product 3D {idx_r + 1}] Tarjeta Glassmorphic con Aura Neón lista.")
                 
     # 2. Completar las escenas restantes con generación Flux fotorrealista
     restantes = n - len(rutas)
@@ -938,7 +943,7 @@ async def procesar_tema(tema, indice):
             prompts = generar_prompts_para_guion(guion, n_fotos, investigacion=investigacion)
             videos = descargar_video_clips(tema, work, dur_audio, guion=guion, investigacion=investigacion)
             
-            # Integrar clip del Presentador Virtual Faceless si está activo
+            # Integrar clip del Presentador Virtual Faceless animado con Lip-Sync
             if config.get("avatar_presentador", {}).get("activado", True):
                 avatar_host_img = work / "host_avatar.png"
                 intro_host_clip = work / "v_intro_host.mp4"
@@ -946,9 +951,12 @@ async def procesar_tema(tema, indice):
                     host_host = config.get("avatar_presentador", {}).get("host", "http://100.95.107.65:8188")
                     host_ok = generar_avatar_en_rtx5090(avatar_host_img, host=host_host, tema=tema)
                     if host_ok:
-                        ok_intro = crear_clip_intro_presentador(avatar_host_img, intro_host_clip, duracion=3.5)
-                        if ok_intro:
-                            print(f"      👤 Clip de Presentador Virtual Faceless integrado al inicio.")
+                        # Animar con sincronización de voz y gesticulación del visor
+                        ok_intro = generar_clip_avatar_lipsync(avatar_host_img, work / "a_voz.mp3", intro_host_clip)
+                        if not ok_intro:
+                            ok_intro = crear_clip_intro_presentador(avatar_host_img, intro_host_clip, duracion=3.5)
+                        if ok_intro and intro_host_clip.exists():
+                            print(f"      👤 Clip de Presentador Lip-Sync integrado al inicio.")
                             videos.insert(0, str(intro_host_clip.resolve()))
                             
             fotos = paso_imagenes(prompts, work, n_fotos, tema=tema, investigacion=investigacion)

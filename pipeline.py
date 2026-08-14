@@ -619,7 +619,11 @@ def paso_imagenes(prompts, work, n, tema="", investigacion=None):
                                 "-vf", f"scale={target_w}:{target_h}:force_original_aspect_ratio=increase,crop={target_w}:{target_h},setsar=1",
                                 f"i{idx_actual}.jpg"], f"escalando {idx_actual}", cwd=work)
                     (work / f"tmp_{idx_actual}.jpg").unlink(missing_ok=True)
-     # ---------- 6. MASTER BROADCAST RENDER (MULTI-LAYER SUITE) ----------
+                    rutas.append(f"i{idx_actual}.jpg")
+                    
+    return rutas
+
+# ---------- 6. MASTER BROADCAST RENDER (MULTI-LAYER SUITE) ----------
 def paso_render_pillow(imagenes, videos, audio, srt_path, musica, salida, work):
     print("   🎬 Master Broadcast Video Assembler (Avatar + 3D Product + B-Roll + Waveform)...")
     

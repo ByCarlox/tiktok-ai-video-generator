@@ -20,6 +20,9 @@ from publisher import publicar_video
 from qa_review import revisar_video, MAX_REINTENTOS, evaluar_asset_imagen, evaluar_asset_video
 from investigacion import investigar_tema
 from media_fetcher import obtener_clips_multi_fuente, obtener_clips_multi_fuente_hibrido
+from product_fetcher import obtener_imagenes_producto_real
+from compositor import componer_smart_backdrop
+from avatar_host import generar_avatar_en_rtx5090, crear_clip_intro_presentador
 import trends as trends_module
 
 FPS = 30
@@ -536,51 +539,68 @@ def requests_quote(p):
     from urllib.parse import quote
     return quote(p)
 
-def paso_imagenes(prompts, work, n, tema=""):
-    print(f"   🎨 Generando {n} imágenes de alta concordancia (flux)...")
+def paso_imagenes(prompts, work, n, tema="", investigacion=None):
+    print(f"   🎨 Generando/Componiendo {n} recursos visuales de alta fidelidad...")
     config = cfg()
     res_type = config.get("resolucion", "1080p").lower()
     target_w, target_h = (2160, 3840) if res_type == "4k" else (1080, 1920)
     
-    vistas, rutas = set(), []
-    variantes = ["", ", hyperrealistic 8k details", ", cinematic vertical shot", ", detailed photography",
-                 ", studio lighting, 8k resolution", ", golden hour cinematic light", ", ultra detailed macro shot"]
-    for i in range(n):
-        base = prompts[i % len(prompts)] if prompts else "cinematic scene"
-        for intento in range(3):
-            p = base + variantes[(i + intento) % len(variantes)]
-            tmp_img = work / f"tmp_{i}.jpg"
-            h = descargar_imagen_v3(p, tmp_img, seed=1000 + i * 97 + intento * 13)
-            
-            if h and h not in vistas:
-                vistas.add(h)
+    rutas = []
+    
+    # 1. Obtener fotos reales del producto verídico si está activado
+    if config.get("fotos_reales", {}).get("activado", True):
+        max_reales = config.get("fotos_reales", {}).get("cantidad_maxima", 3)
+        fotos_reales = obtener_imagenes_producto_real(tema, investigacion, work, cantidad=max_reales)
+        for idx_r, f_real in enumerate(fotos_reales):
+            salida_comp = work / f"i{len(rutas)}.jpg"
+            ok = componer_smart_backdrop(f_real, salida_comp, width=target_w, height=target_h)
+            if ok:
+                rutas.append(f"i{len(rutas)}.jpg")
+                print(f"      🖼️ [Hero Product {idx_r + 1}] Composición Anti-Stretch lista (Aspecto 100% Nativo + Fondo Blur).")
                 
-                # PRE-EVALUACIÓN ANTES DE ESCALAR CON FFMPEG
-                if tema:
-                    aprobado, eval_info = evaluar_asset_imagen(tmp_img, tema, base)
-                    if not aprobado:
-                        print(f"      ⏭️ Imagen {i+1} descartada en pre-evaluación (Relevancia < 75%). Generando variante {intento+2}...")
-                        tmp_img.unlink(missing_ok=True)
-                        continue
-                        
-                # Escalar exacto sólo si pasó la pre-evaluación (aplicar zoom cinematográfico Ken Burns)
-                run_ffmpeg(["ffmpeg", "-y", "-i", f"tmp_{i}.jpg",
-                            "-vf", f"scale={target_w}:{target_h}:force_original_aspect_ratio=increase,crop={target_w}:{target_h},setsar=1",
-                            f"i{i}.jpg"], f"escalando {i}", cwd=work)
-                tmp_img.unlink(missing_ok=True)
-                rutas.append(f"i{i}.jpg")
-                print(f"      ✅ imagen {i + 1}/{n} pre-aprobada")
-                break
+    # 2. Completar las escenas restantes con generación Flux fotorrealista
+    restantes = n - len(rutas)
+    if restantes > 0:
+        vistas = set()
+        variantes = ["", ", hyperrealistic 8k details", ", cinematic vertical shot", ", detailed photography",
+                     ", studio lighting, 8k resolution", ", golden hour cinematic light", ", ultra detailed macro shot"]
+        for i in range(restantes):
+            idx_actual = len(rutas)
+            base = prompts[i % len(prompts)] if prompts else "cinematic scene"
+            for intento in range(3):
+                p = base + variantes[(i + intento) % len(variantes)]
+                tmp_img = work / f"tmp_{idx_actual}.jpg"
+                h = descargar_imagen_v3(p, tmp_img, seed=1000 + idx_actual * 97 + intento * 13)
                 
-        # Fallback si ninguna variante pasó pre-evaluación
-        if len(rutas) <= i:
-            if (work / f"tmp_{i}.jpg").exists():
-                run_ffmpeg(["ffmpeg", "-y", "-i", f"tmp_{i}.jpg",
-                            "-vf", f"scale={target_w}:{target_h}:force_original_aspect_ratio=increase,crop={target_w}:{target_h},setsar=1",
-                            f"i{i}.jpg"], f"escalando {i}", cwd=work)
-                (work / f"tmp_{i}.jpg").unlink(missing_ok=True)
-                rutas.append(f"i{i}.jpg")
-                
+                if h and h not in vistas:
+                    vistas.add(h)
+                    
+                    # PRE-EVALUACIÓN ANTES DE ESCALAR
+                    if tema:
+                        aprobado, eval_info = evaluar_asset_imagen(tmp_img, tema, base)
+                        if not aprobado:
+                            print(f"      ⏭️ Imagen {idx_actual+1} descartada en pre-evaluación (Relevancia < 75%). Generando variante {intento+2}...")
+                            tmp_img.unlink(missing_ok=True)
+                            continue
+                            
+                    # Escalar con Ken Burns dinámico
+                    run_ffmpeg(["ffmpeg", "-y", "-i", f"tmp_{idx_actual}.jpg",
+                                "-vf", f"scale={target_w}:{target_h}:force_original_aspect_ratio=increase,crop={target_w}:{target_h},setsar=1",
+                                f"i{idx_actual}.jpg"], f"escalando {idx_actual}", cwd=work)
+                    tmp_img.unlink(missing_ok=True)
+                    rutas.append(f"i{idx_actual}.jpg")
+                    print(f"      ✅ imagen {idx_actual + 1}/{n} pre-aprobada")
+                    break
+                    
+            # Fallback si no pasó
+            if len(rutas) <= idx_actual:
+                if (work / f"tmp_{idx_actual}.jpg").exists():
+                    run_ffmpeg(["ffmpeg", "-y", "-i", f"tmp_{idx_actual}.jpg",
+                                "-vf", f"scale={target_w}:{target_h}:force_original_aspect_ratio=increase,crop={target_w}:{target_h},setsar=1",
+                                f"i{idx_actual}.jpg"], f"escalando {idx_actual}", cwd=work)
+                    (work / f"tmp_{idx_actual}.jpg").unlink(missing_ok=True)
+                    rutas.append(f"i{idx_actual}.jpg")
+                    
     return rutas
 
 # ---------- 6. RENDER PRO ----------
@@ -687,7 +707,9 @@ def paso_render_pillow(imagenes, videos, audio, srt_path, musica, salida, work):
         fc = "[0:v][1:v]overlay=0:0[outv];[2:a]anull[outa]"
         
     cmd += ["-filter_complex", fc, "-map", "[outv]", "-map", "[outa]"]
-    cmd += ["-c:v", "libx264", "-preset", "medium", "-crf", str(crf), "-pix_fmt", "yuv420p",
+    max_mbps = config.get("compositor", {}).get("bitrate_max_mbps", 40)
+    cmd += ["-c:v", "libx264", "-preset", "medium", "-crf", str(crf),
+            "-maxrate", f"{max_mbps}M", "-bufsize", f"{max_mbps * 2}M", "-pix_fmt", "yuv420p",
             "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", str(salida.resolve())]
             
     run_ffmpeg(cmd, "render overlay", cwd=work)
@@ -878,7 +900,21 @@ async def procesar_tema(tema, indice):
             n_fotos = min(7, max(4, dur_max // 5))
             prompts = generar_prompts_para_guion(guion, n_fotos, investigacion=investigacion)
             videos = descargar_video_clips(tema, work, dur_audio, guion=guion, investigacion=investigacion)
-            fotos = paso_imagenes(prompts, work, n_fotos, tema=tema)
+            
+            # Integrar clip del Presentador Virtual Faceless si está activo
+            if config.get("avatar_presentador", {}).get("activado", True):
+                avatar_host_img = work / "host_avatar.png"
+                intro_host_clip = work / "v_intro_host.mp4"
+                if not intro_host_clip.exists():
+                    host_host = config.get("avatar_presentador", {}).get("host", "http://100.95.107.65:8188")
+                    host_ok = generar_avatar_en_rtx5090(avatar_host_img, host=host_host, tema=tema)
+                    if host_ok:
+                        ok_intro = crear_clip_intro_presentador(avatar_host_img, intro_host_clip, duracion=3.5)
+                        if ok_intro:
+                            print(f"      👤 Clip de Presentador Virtual Faceless integrado al inicio.")
+                            videos.insert(0, str(intro_host_clip.resolve()))
+                            
+            fotos = paso_imagenes(prompts, work, n_fotos, tema=tema, investigacion=investigacion)
             imagenes = ["i0.jpg"] + fotos
             
             # 7 render

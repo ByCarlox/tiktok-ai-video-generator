@@ -35,6 +35,23 @@ ia:
 imagenes:
   proveedor: "pollinations"      # pollinations (gratis) | stability | replicate
 
+# Presentador Virtual Faceless (renderizado en GPU RTX 5090)
+avatar_presentador:
+  activado: true                 # Genera un presentador virtual para el hook inicial del video
+  host: "http://100.95.107.65:8188"
+  estilo: "cyber_host"           # cyber_host | minimal_silhouette
+
+# Compositor Anti-Stretch (Cero deformación en imágenes 16:9 o 1:1)
+compositor:
+  modo_encuadre: "smart_blur"    # smart_blur (fondo desenfocado + sombra 3D)
+  sombra_3d: true
+  bitrate_max_mbps: 40           # Ultra bitrate 4K (40 Mbps)
+
+# Fotos Reales y Verídicas de Productos
+fotos_reales:
+  activado: true                 # Busca fotos reales oficiales en Wikipedia/Wikimedia
+  cantidad_maxima: 3
+
 video_ia:
   proveedor: "comfyui_remote"    # comfyui_remote (RTX 5090 vía Tailscale) | stock_multi_fuente (fallback)
   host_remoto: "http://100.95.107.65:8188"

@@ -26,11 +26,25 @@ PROMPT_AVATAR_CYBER = (
 )
 
 def generar_avatar_en_rtx5090(output_path: Path, host: str = "http://100.95.107.65:8188", tema: str = "", estilo: str = "kawaii_waifu") -> bool:
-    """Envía la petición a ComfyUI en la RTX 5090 para renderizar la presentadora Kawaii Waifu o Cyber Host."""
-    print(f"      🌸 Generando Presentadora Virtual [{estilo.upper()}] en la GPU RTX 5090...")
+    """Envía la petición a ComfyUI en la RTX 5090 o reutiliza el modelo master recortado oficial."""
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     
+    # 0. Si existe el modelo master recortado en assets/avatar, reutilizarlo para consistencia de marca
+    master_cutout = Path("assets/avatar/waifu_master_cutout.png")
+    master_jpg = Path("assets/avatar/waifu_master.jpg")
+    if estilo == "kawaii_waifu":
+        import shutil
+        if master_cutout.exists():
+            shutil.copy2(master_cutout, output_path)
+            print("      💎 Usando Presentadora Master Oficial de la marca (assets/avatar/waifu_master_cutout.png).")
+            return True
+        elif master_jpg.exists():
+            shutil.copy2(master_jpg, output_path)
+            print("      💎 Usando Presentadora Master Oficial de la marca (assets/avatar/waifu_master.jpg).")
+            return True
+            
+    print(f"      🌸 Generando Presentadora Virtual [{estilo.upper()}] en la GPU RTX 5090...")
     prompt_base = PROMPT_AVATAR_KAWAII if estilo == "kawaii_waifu" else PROMPT_AVATAR_CYBER
     
     # 1. Intentar con ComfyUI en la GPU
@@ -102,15 +116,40 @@ def crear_clip_intro_presentador(avatar_img_path: Path, output_clip: Path, durac
         return False
         
     try:
+        # Si la imagen es PNG transparente, componerla sobre un fondo de estudio futurista
+        comp_path = output_clip.parent / "intro_comp_stage.jpg"
+        source_img = avatar_img_path
+        with Image.open(avatar_img_path) as av_img:
+            if av_img.mode == "RGBA":
+                # Crear fondo degradado anime estudio (azul marino profundo a lavanda)
+                stage_bg = Image.new("RGBA", (width, height), (15, 12, 28, 255))
+                draw_st = ImageDraw.Draw(stage_bg)
+                # Iluminación de foco de estudio
+                draw_st.ellipse([width//2 - 400, height//2 - 500, width//2 + 400, height//2 + 500], fill=(65, 35, 95, 255))
+                stage_bg = stage_bg.filter(ImageFilter.GaussianBlur(radius=60))
+                
+                # Escalar la waifu centrada
+                av_w, av_h = av_img.size
+                scale_f = min((width * 0.95) / av_w, (height * 0.90) / av_h)
+                nw, nh = int(av_w * scale_f), int(av_h * scale_f)
+                av_resized = av_img.resize((nw, nh), Image.Resampling.LANCZOS)
+                
+                pos_x = (width - nw) // 2
+                pos_y = height - nh - int(height * 0.04)
+                stage_bg.paste(av_resized, (pos_x, pos_y), av_resized)
+                stage_bg.convert("RGB").save(comp_path, "JPEG", quality=95)
+                source_img = comp_path
+                
         fps = 30
         frames = int(duracion * fps)
         cmd = [
-            "ffmpeg", "-y", "-loop", "1", "-i", str(avatar_img_path.resolve()),
+            "ffmpeg", "-y", "-loop", "1", "-i", str(source_img.resolve()),
             "-vf", f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height},"
                    f"zoompan=z='min(zoom+0.0018,1.15)':d={frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}",
             "-t", f"{duracion:.2f}", "-pix_fmt", "yuv420p", "-r", str(fps), "-an", str(output_clip.resolve())
         ]
         res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        comp_path.unlink(missing_ok=True)
         return output_clip.exists() and output_clip.stat().st_size > 0
     except Exception as e:
         print(f"      ⚠️ Error creando clip de intro de presentadora: {e}")

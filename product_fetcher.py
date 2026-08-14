@@ -164,4 +164,23 @@ def obtener_imagenes_producto_real(tema: str, investigacion: dict, output_dir: P
                 if len(imagenes_descargadas) >= cantidad:
                     break
                     
+    # Fallback inteligente: Si Wikipedia no tiene fotos, generar el Hero Product aislado en estudio 8K
+    if not imagenes_descargadas:
+        print(f"      🎨 Generando Hero Asset 3D aislado para '{tema[:30]}...'")
+        dest = output_dir / f"real_product_0.jpg"
+        clean_subj = queries[0] if queries else tema
+        prompt_asset = f"isolated hero product photography of {clean_subj}, cinematic studio lighting, sleek dark minimalist background, razor sharp focus, 8k resolution, photorealistic"
+        try:
+            # Descargar asset nítido
+            from urllib.parse import quote
+            safe_p = quote(prompt_asset)
+            flux_url = f"https://image.pollinations.ai/prompt/{safe_p}?width=1280&height=1280&nologo=true&seed=8844"
+            r = requests.get(flux_url, timeout=30)
+            if r.status_code == 200 and len(r.content) > 10000:
+                dest.write_bytes(r.content)
+                imagenes_descargadas.append(dest)
+                print(f"      💎 Hero Asset 3D generado con éxito para la tarjeta de producto.")
+        except Exception as e:
+            print(f"      ⚠️ Fallback de hero asset falló: {e}")
+            
     return imagenes_descargadas

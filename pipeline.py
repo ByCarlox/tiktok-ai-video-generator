@@ -746,34 +746,60 @@ def paso_render_pillow(imagenes, videos, audio, srt_path, musica, salida, work):
         
     (work / "concat_subtitles.txt").write_text("".join(concat_lines), encoding="utf-8")
     
-    # 5. Mezclar fondo, onda reactiva, subtítulos overlay y audio masterizado
+    # 4. Generar Overlay de Onda de Audio Reactiva Neón
+    wave_png = work / "audio_waveform.png"
+    generar_overlay_onda_audio(0.85, wave_png, width=w, height=h)
+    
+    # 5. Generar Badge PIP de Presentador en Esquina si existe el avatar
+    avatar_img = work / "host_avatar.png"
+    pip_png = work / "avatar_pip_badge.png"
+    tiene_pip = False
+    if avatar_img.exists():
+        from avatar_host import crear_overlay_pip_avatar_animado
+        ok_pip = crear_overlay_pip_avatar_animado(avatar_img, pip_png, size=int(w * 0.22))
+        if ok_pip and pip_png.exists():
+            tiene_pip = True
+            
+    # 6. Mezclar fondo, onda reactiva, subtítulos overlay, PIP avatar y audio masterizado
     max_mbps = config.get("compositor", {}).get("bitrate_max_mbps", 40)
     cmd = [
         "ffmpeg", "-y",
         "-i", "background.mp4",
         "-loop", "1", "-i", "audio_waveform.png",
-        "-f", "concat", "-safe", "0", "-i", "concat_subtitles.txt",
-        "-i", "a.mp3"
+        "-f", "concat", "-safe", "0", "-i", "concat_subtitles.txt"
     ]
+    
+    v_chain = "[0:v][1:v]overlay=0:0[v_wave];[v_wave][2:v]overlay=0:0"
+    
+    if tiene_pip:
+        cmd += ["-loop", "1", "-i", "avatar_pip_badge.png"]
+        v_chain += f"[v_sub];[v_sub][3:v]overlay=W-w-35:H-h-240:enable='gt(t,3.2)'[outv]"
+        audio_in_idx = 4
+    else:
+        v_chain += "[outv]"
+        audio_in_idx = 3
+        
+    cmd += ["-i", "a.mp3"]
+    
     if tiene_musica:
         cmd += ["-stream_loop", "-1", "-i", "m.mp3"]
-        fc = ("[0:v][1:v]overlay=0:0[v_wave];"
-              "[v_wave][2:v]overlay=0:0[outv];"
-              "[4:a]volume=0.25[m];[m][3:a]sidechaincompress="
-              "threshold=0.125:ratio=6:attack=15:release=250[ducked];"
-              "[ducked][3:a]amix=inputs=2:duration=first:dropout_transition=2,"
-              "loudnorm=I=-14:LRA=11:TP=-1.5[outa]")
+        musica_in_idx = audio_in_idx + 1
+        fc = (f"{v_chain};"
+              f"[{musica_in_idx}:a]volume=0.25[m];[m][{audio_in_idx}:a]sidechaincompress="
+              f"threshold=0.125:ratio=6:attack=15:release=250[ducked];"
+              f"[ducked][{audio_in_idx}:a]amix=inputs=2:duration=first:dropout_transition=2,"
+              f"loudnorm=I=-14:LRA=11:TP=-1.5[outa]")
         cmd += [
             "-filter_complex", fc,
             "-map", "[outv]",
             "-map", "[outa]"
         ]
     else:
-        fc = "[0:v][1:v]overlay=0:0[v_wave];[v_wave][2:v]overlay=0:0[outv]"
+        fc = f"{v_chain}"
         cmd += [
             "-filter_complex", fc,
             "-map", "[outv]",
-            "-map", "3:a"
+            "-map", f"{audio_in_idx}:a"
         ]
         
     cmd += [
@@ -784,7 +810,7 @@ def paso_render_pillow(imagenes, videos, audio, srt_path, musica, salida, work):
         "-movflags", "+faststart",
         str(salida.resolve())
     ]
-    run_ffmpeg(cmd, "renderizando video master broadcast con subtitulos y efectos", cwd=work)
+    run_ffmpeg(cmd, "renderizando video master broadcast con subtitulos, presentador PIP y efectos", cwd=work)
 
 def paso_render(imagenes, audio, srt, musica, salida, work):
     print(f"   🎬 Render PRO ({len(imagenes)} escenas + crossfade + ducking)...")

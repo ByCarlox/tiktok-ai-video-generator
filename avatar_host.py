@@ -109,39 +109,50 @@ def crear_clip_intro_presentador(avatar_img_path: Path, output_clip: Path, durac
 
 def crear_badge_presentador_flotante(avatar_img_path: Path, output_png: Path, size: int = 240) -> bool:
     """Crea un badge circular transparente con borde de aura cian brillante para colocar en esquina (PIP)."""
+    return crear_overlay_pip_avatar_animado(avatar_img_path, output_png, size=size)
+
+def crear_overlay_pip_avatar_animado(avatar_img_path: Path, output_png: Path, size: int = 280, halo_color=(0, 240, 255)) -> bool:
+    """Crea una insignia PIP circular futurista con el avatar en 3D, anillo holográfico y etiqueta 'AI HOST'."""
     try:
         with Image.open(avatar_img_path) as orig:
             img = orig.convert("RGBA")
-            # Recortar cuadrado centrado en el pecho/cabeza
             w, h = img.size
             crop_size = min(w, int(h * 0.45))
             left = (w - crop_size) // 2
-            top = int(h * 0.15)
+            top = int(h * 0.12)
             cropped = img.crop((left, top, left + crop_size, top + crop_size))
             cropped = cropped.resize((size, size), Image.Resampling.LANCZOS)
             
-            # Crear máscara circular
+            # Máscara circular
             mask = Image.new("L", (size, size), 0)
             draw_m = ImageDraw.Draw(mask)
-            draw_m.ellipse((4, 4, size - 4, size - 4), fill=255)
+            draw_m.ellipse((8, 8, size - 8, size - 8), fill=255)
             
-            # Crear lienzo con aura de brillo cian
-            badge = Image.new("RGBA", (size + 16, size + 16), (0, 0, 0, 0))
-            draw_b = ImageDraw.Draw(badge)
+            badge_canvas = Image.new("RGBA", (size + 40, size + 60), (0, 0, 0, 0))
+            draw_b = ImageDraw.Draw(badge_canvas)
             
-            # Anillo de aura cian brillante
-            draw_b.ellipse((4, 4, size + 12, size + 12), outline=(0, 240, 255, 220), width=4)
-            badge_blurred = badge.filter(ImageFilter.GaussianBlur(radius=3))
+            # Sombra profunda
+            draw_b.ellipse((16, 20, size + 24, size + 28), fill=(0, 0, 0, 180))
+            badge_canvas = badge_canvas.filter(ImageFilter.GaussianBlur(radius=8))
+            draw_b = ImageDraw.Draw(badge_canvas)
             
-            # Pegar avatar circular en el centro
+            # Anillo de neón cian
+            draw_b.ellipse((16, 16, size + 24, size + 24), outline=halo_color, width=4)
+            
+            # Pegar el avatar circular
             avatar_circ = Image.new("RGBA", (size, size), (0, 0, 0, 0))
             avatar_circ.paste(cropped, (0, 0), mask)
+            badge_canvas.paste(avatar_circ, (20, 20), mask)
             
-            final_badge = Image.alpha_composite(badge_blurred, badge)
-            final_badge.paste(avatar_circ, (8, 8), mask)
+            # Etiqueta "● AI HOST"
+            lbl_w, lbl_h = 110, 26
+            lbl_x = (size + 40 - lbl_w) // 2
+            lbl_y = size + 16
+            draw_b.rounded_rectangle([lbl_x, lbl_y, lbl_x + lbl_w, lbl_y + lbl_h], radius=6, fill=(10, 18, 30, 220), outline=halo_color, width=2)
+            draw_b.ellipse([lbl_x + 8, lbl_y + 8, lbl_x + 16, lbl_y + 16], fill=(0, 255, 120, 255))
             
-            final_badge.save(output_png, "PNG")
+            badge_canvas.save(output_png, "PNG")
             return True
     except Exception as e:
-        print(f"      ⚠️ Error creando badge flotante de presentador: {e}")
+        print(f"      ⚠️ Error creando badge PIP: {e}")
         return False

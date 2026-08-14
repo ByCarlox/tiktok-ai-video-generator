@@ -270,68 +270,114 @@ def obtener_checkpoint_disponible(host):
     return None
 
 def generar_video_comfyui_remoto(prompt, output_clip, host="http://100.95.107.65:8188", timeout=120):
-    """Envía un prompt a la API de ComfyUI en la RTX 5090 para generar un videoclip 4K sintético por IA."""
+    """Envía un prompt a la API de ComfyUI en la RTX 5090 para generar un videoclip 4K multi-ángulo dinámico por IA."""
     ckpt_name = obtener_checkpoint_disponible(host)
     if not ckpt_name:
         print(f"      ℹ️ ComfyUI activo, pero la carpeta 'ComfyUI/models/checkpoints' está vacía en la GPU. Usando banco de stock 4K...")
         return False
         
-    print(f"      🤖 Generando videoclip de IA en la RTX 5090 ({ckpt_name}): '{prompt[:40]}...'")
+    print(f"      🤖 Generando secuencia multi-ángulo en la RTX 5090 ({ckpt_name}): '{prompt[:35]}...'")
     try:
-        # Petición a la API de ComfyUI con el modelo detectado
-        workflow = {
-            "prompt": {
-                "3": {
-                    "class_type": "KSampler",
-                    "inputs": {
-                        "cfg": 6.0, "denoise": 1.0, "latent_image": ["5", 0], "model": ["4", 0],
-                        "positive": ["6", 0], "negative": ["7", 0], "sampler_name": "euler", "scheduler": "normal", "seed": 42, "steps": 20
-                    }
-                },
-                "4": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": ckpt_name}},
-                "5": {"class_type": "EmptyLatentImage", "inputs": {"batch_size": 1, "height": 1024, "width": 576}},
-                "6": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["4", 1], "text": f"cinematic 4k vertical video, {prompt}"}},
-                "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["4", 1], "text": "blurry, low quality, distortion"}},
-                "8": {"class_type": "VAEDecode", "inputs": {"samples": ["3", 0], "vae": ["4", 2]}},
-                "9": {"class_type": "SaveImage", "inputs": {"filename_prefix": "TikTokAI", "images": ["8", 0]}}
+        # Prompt A: Macro Shot ultra detallado
+        # Prompt B: Wide Cinematic Orbit Shot
+        prompts_gpu = [
+            f"extreme macro closeup of {prompt}, glowing fiber optics, intricate circuits, laser lighting, 8k, photorealistic",
+            f"hero reveal wide angle view of {prompt}, volumetric cyan atmospheric lighting, dark high tech laboratory, 8k"
+        ]
+        
+        frames_descargados = []
+        import random
+        for p_idx, p_text in enumerate(prompts_gpu):
+            seed_val = random.randint(1000, 999999)
+            workflow = {
+                "prompt": {
+                    "3": {
+                        "class_type": "KSampler",
+                        "inputs": {
+                            "cfg": 6.5, "denoise": 1.0, "latent_image": ["5", 0], "model": ["4", 0],
+                            "positive": ["6", 0], "negative": ["7", 0], "sampler_name": "euler", "scheduler": "normal", "seed": seed_val, "steps": 20
+                        }
+                    },
+                    "4": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": ckpt_name}},
+                    "5": {"class_type": "EmptyLatentImage", "inputs": {"batch_size": 1, "height": 1024, "width": 576}},
+                    "6": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["4", 1], "text": f"cinematic 4k vertical video, {p_text}"}},
+                    "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["4", 1], "text": "blurry, low quality, distortion, cartoon"}},
+                    "8": {"class_type": "VAEDecode", "inputs": {"samples": ["3", 0], "vae": ["4", 2]}},
+                    "9": {"class_type": "SaveImage", "inputs": {"filename_prefix": f"GPU_Clip_{p_idx}", "images": ["8", 0]}}
+                }
             }
-        }
-        r = requests.post(f"{host}/prompt", json=workflow, timeout=timeout)
-        if r.status_code == 200:
-            prompt_id = r.json().get("prompt_id")
-            import time
-            for _ in range(40):
-                time.sleep(0.5)
-                h_res = requests.get(f"{host}/history/{prompt_id}", timeout=5)
-                if h_res.status_code == 200 and prompt_id in h_res.json():
-                    outputs = h_res.json()[prompt_id].get("outputs", {})
-                    img_info = outputs.get("9", {}).get("images", [{}])[0]
-                    fname = img_info.get("filename")
-                    if fname:
-                        # Descargar la imagen generada por la GPU
-                        view_url = f"{host}/view?filename={fname}&subfolder={img_info.get('subfolder', '')}&type=output"
-                        v_res = requests.get(view_url, timeout=30)
-                        if v_res.status_code == 200:
-                            # Guardar imagen temporal y convertir a clip vertical animado
-                            tmp_img = output_clip.parent / f"raw_gpu_{output_clip.stem}.png"
-                            tmp_img.write_bytes(v_res.content)
-                            
-                            # Convertir a clip mp4 de 6 segundos con Ken Burns suave
-                            cmd = [
-                                "ffmpeg", "-y", "-loop", "1", "-i", str(tmp_img.resolve()),
-                                "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,zoompan=z='min(zoom+0.0015,1.15)':d=180:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920",
-                                "-t", "6", "-pix_fmt", "yuv420p", "-r", "30", "-an", str(output_clip.resolve())
-                            ]
-                            import subprocess
-                            subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                            tmp_img.unlink(missing_ok=True)
-                            if output_clip.exists() and output_clip.stat().st_size > 0:
-                                print(f"      🔥 ¡Clip generado en 4K por la RTX 5090 listo!")
-                                return True
-            print("      ✅ Petición de Video IA procesada con éxito en la GPU RTX 5090.")
-            return True
+            r = requests.post(f"{host}/prompt", json=workflow, timeout=15)
+            if r.status_code == 200:
+                prompt_id = r.json().get("prompt_id")
+                import time
+                for _ in range(30):
+                    time.sleep(0.4)
+                    h_res = requests.get(f"{host}/history/{prompt_id}", timeout=5)
+                    if h_res.status_code == 200 and prompt_id in h_res.json():
+                        outputs = h_res.json()[prompt_id].get("outputs", {})
+                        img_info = outputs.get("9", {}).get("images", [{}])[0]
+                        fname = img_info.get("filename")
+                        if fname:
+                            view_url = f"{host}/view?filename={fname}&subfolder={img_info.get('subfolder', '')}&type=output"
+                            v_res = requests.get(view_url, timeout=20)
+                            if v_res.status_code == 200:
+                                tmp_frame = output_clip.parent / f"gpu_raw_{output_clip.stem}_{p_idx}.png"
+                                tmp_frame.write_bytes(v_res.content)
+                                frames_descargados.append(tmp_frame)
+                                break
+                                
+        if frames_descargados:
+            # Crear clip animado dinámico combinando los ángulos con movimiento y paneo de cámara
+            import subprocess
+            if len(frames_descargados) >= 2:
+                # Componer video dinámico de 5 segundos con corte y paneo cinematográfico
+                seg_a = output_clip.parent / f"tmp_a_{output_clip.stem}.mp4"
+                seg_b = output_clip.parent / f"tmp_b_{output_clip.stem}.mp4"
+                
+                # Ángulo 1: Paneo hacia la derecha con zoom
+                subprocess.run([
+                    "ffmpeg", "-y", "-loop", "1", "-i", str(frames_descargados[0].resolve()),
+                    "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,zoompan=z='min(zoom+0.002,1.20)':d=75:x='iw/2-(iw/zoom/2)+on*2':y='ih/2-(ih/zoom/2)':s=1080x1920",
+                    "-t", "2.5", "-pix_fmt", "yuv420p", "-r", "30", "-an", str(seg_a.resolve())
+                ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                
+                # Ángulo 2: Zoom out y paneo vertical
+                subprocess.run([
+                    "ffmpeg", "-y", "-loop", "1", "-i", str(frames_descargados[1].resolve()),
+                    "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,zoompan=z='if(lte(zoom,1.0),1.20,max(1.0,zoom-0.002))':d=75:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)-on*2':s=1080x1920",
+                    "-t", "2.5", "-pix_fmt", "yuv420p", "-r", "30", "-an", str(seg_b.resolve())
+                ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                
+                # Unir con transición cinematográfica
+                list_txt = output_clip.parent / f"list_gpu_{output_clip.stem}.txt"
+                with open(list_txt, "w", encoding="utf-8") as f:
+                    f.write(f"file '{seg_a.name}'\n")
+                    f.write(f"file '{seg_b.name}'\n")
+                subprocess.run([
+                    "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_txt.name,
+                    "-c", "copy", str(output_clip.resolve())
+                ], cwd=output_clip.parent, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                
+                # Limpiar temporales
+                seg_a.unlink(missing_ok=True)
+                seg_b.unlink(missing_ok=True)
+                list_txt.unlink(missing_ok=True)
+            else:
+                # Solo 1 frame: Paneo dinámico
+                subprocess.run([
+                    "ffmpeg", "-y", "-loop", "1", "-i", str(frames_descargados[0].resolve()),
+                    "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,zoompan=z='min(zoom+0.0025,1.22)':d=150:x='iw/2-(iw/zoom/2)+sin(on/10)*20':y='ih/2-(ih/zoom/2)+cos(on/10)*15':s=1080x1920",
+                    "-t", "5.0", "-pix_fmt", "yuv420p", "-r", "30", "-an", str(output_clip.resolve())
+                ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                
+            for f in frames_descargados:
+                f.unlink(missing_ok=True)
+                
+            if output_clip.exists() and output_clip.stat().st_size > 5000:
+                print(f"      🔥 ¡Secuencia cinematográfica multi-ángulo generada en la RTX 5090!")
+                return True
     except Exception as e:
-        print(f"      ⚠️ ComfyUI API error ({e}). Conmutando a banco de stock multi-fuente...")
+        print(f"      ⚠️ ComfyUI GPU error ({e}). Conmutando a banco de stock...")
     return False
 
 # Extensión de obtener_clips_multi_fuente con conmutación inteligente

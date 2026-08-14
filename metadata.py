@@ -147,7 +147,19 @@ def generar_metadata(tema, guion, video_path, indice):
 
     meta = {}
     try:
-        meta = json.loads(response_text)
+        import re
+        cleaned_text = re.sub(r"<think>.*?</think>", "", response_text, flags=re.DOTALL | re.IGNORECASE).strip()
+        if "```json" in cleaned_text:
+            cleaned_text = cleaned_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in cleaned_text:
+            cleaned_text = cleaned_text.split("```")[1].split("```")[0].strip()
+            
+        ini = cleaned_text.find("{")
+        fin = cleaned_text.rfind("}")
+        if ini != -1 and fin != -1 and fin > ini:
+            cleaned_text = cleaned_text[ini:fin+1]
+            
+        meta = json.loads(cleaned_text)
     except Exception as e:
         print(f"⚠️ Error decodificando JSON de metadatos: {e}")
         # Fallback manual robusto

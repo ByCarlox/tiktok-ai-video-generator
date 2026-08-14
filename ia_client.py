@@ -128,6 +128,7 @@ def generar_guion(tema: str, duracion: int = 40, investigacion: dict = None) -> 
         )
         if r.status_code == 200:
             res = r.json().get("response", "").strip()
+            res = limpiar_respuesta_llm(r.json().get("response", "")).strip()
             if res:
                 return res
     except Exception:
@@ -143,13 +144,14 @@ def generar_prompts_imagenes(tema: str) -> list:
     prompt = PROMPT_IMAGENES.format(tema=tema)
     
     try:
-        if ia["proveedor"] == "ollama":
+        if ia["proveedor"] in ("ollama", "ollama_remote"):
+            host = ia.get("host_remoto", "http://100.95.107.65:11434") if ia["proveedor"] == "ollama_remote" else "http://localhost:11434"
             r = requests.post(
-                "http://localhost:11434/api/generate",
+                f"{host}/api/generate",
                 json={"model": ia["modelo"], "prompt": prompt, "stream": False, "format": "json"},
-                timeout=120
+                timeout=90
             )
-            data = json.loads(r.json().get("response", "{}"))
+            data = extraer_json_valido(r.json().get("response", "{}"))
         else:
             base = ia.get("base_url", "https://api.openai.com/v1")
             r = requests.post(
@@ -162,7 +164,7 @@ def generar_prompts_imagenes(tema: str) -> list:
                 },
                 timeout=60
             )
-            data = json.loads(r.json()["choices"][0]["message"]["content"])
+            data = extraer_json_valido(r.json()["choices"][0]["message"]["content"])
         
         return data.get("prompts", [])[:4]
     except Exception as e:
@@ -198,13 +200,14 @@ def generar_prompts_para_guion(guion: str, n: int, investigacion: dict = None) -
     prompt = PROMPT_IMAGENES_GUION.format(guion=guion, n=n, elementos_visuales=elementos_str)
     
     try:
-        if ia["proveedor"] == "ollama":
+        if ia["proveedor"] in ("ollama", "ollama_remote"):
+            host = ia.get("host_remoto", "http://100.95.107.65:11434") if ia["proveedor"] == "ollama_remote" else "http://localhost:11434"
             r = requests.post(
-                "http://localhost:11434/api/generate",
+                f"{host}/api/generate",
                 json={"model": ia["modelo"], "prompt": prompt, "stream": False, "format": "json"},
-                timeout=120
+                timeout=90
             )
-            data = json.loads(r.json().get("response", "{}"))
+            data = extraer_json_valido(r.json().get("response", "{}"))
         else:
             base = ia.get("base_url", "https://api.openai.com/v1")
             headers = {}
@@ -220,7 +223,7 @@ def generar_prompts_para_guion(guion: str, n: int, investigacion: dict = None) -
                 },
                 timeout=60
             )
-            data = json.loads(r.json()["choices"][0]["message"]["content"])
+            data = extraer_json_valido(r.json()["choices"][0]["message"]["content"])
         
         prompts = data.get("prompts", [])
         if len(prompts) < n:

@@ -93,12 +93,18 @@ def investigar_tema(tema: str) -> dict:
             pass
             
     try:
-        # Limpiar bloques markdown ```json ... ``` si el LLM los incluye
-        cleaned_text = response_text
+        # Limpiar tags de razonamiento <think>...</think> y bloques markdown
+        import re
+        cleaned_text = re.sub(r"<think>.*?</think>", "", response_text, flags=re.DOTALL | re.IGNORECASE).strip()
         if "```json" in cleaned_text:
             cleaned_text = cleaned_text.split("```json")[1].split("```")[0].strip()
         elif "```" in cleaned_text:
             cleaned_text = cleaned_text.split("```")[1].split("```")[0].strip()
+            
+        ini = cleaned_text.find("{")
+        fin = cleaned_text.rfind("}")
+        if ini != -1 and fin != -1 and fin > ini:
+            cleaned_text = cleaned_text[ini:fin+1]
             
         data = json.loads(cleaned_text)
         print("      ✅ Investigación completada (hechos científicos + mapa visual extraídos).")

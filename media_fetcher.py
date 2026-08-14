@@ -282,7 +282,7 @@ def obtener_clips_multi_fuente_hibrido(queries, work_dir, dur_audio, ffmpeg_scal
         host = v_cfg.get("host_remoto", "http://100.95.107.65:8188")
         # Intentar ping a ComfyUI en la RTX 5090
         try:
-            ping = requests.get(f"{host}/system_stats", timeout=3)
+            ping = requests.get(f"{host}/system_stats", timeout=6)
             if ping.status_code == 200:
                 print(f"   🚀 Servidor de Video IA activo en la GPU RTX 5090 ({host}). Generando clips sintéticos...")
                 # Flujo de generación remota en la GPU

@@ -12,89 +12,85 @@ import numpy as np
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter, ImageOps
 
-# Coordenadas relativas exactas de la boca en la Waifu Master (768x1376)
-MOUTH_CENTER_X = 398
-MOUTH_CENTER_Y = 465
-MOUTH_BOX_W = 35
-MOUTH_BOX_H = 22
+# Coordenadas relativas exactas del centro de la sonrisa (768x1376)
+MOUTH_CENTER_X = 395
+MOUTH_CENTER_Y = 464
 
 # Coordenadas relativas de los ojos
 EYE_LEFT_X = 350
 EYE_RIGHT_X = 445
 EYE_Y = 385
-EYE_W = 45
-EYE_H = 35
+
+def _generar_visema_sprite(base_img: Image.Image, w_box: int, h_box: int, has_teeth=True, has_tongue=True) -> Image.Image:
+    """Genera un visema limpiando suavemente el trazo previo de la boca para evitar líneas dobles."""
+    s = base_img.copy()
+    skin_tone = (247, 222, 210, 255)
+    mouth_inner = (120, 30, 50, 255)
+    mouth_tongue = (245, 120, 140, 255)
+    mouth_teeth = (255, 255, 255, 255)
+    mouth_lip_line = (140, 45, 55, 255)
+    
+    # 1. Difuminar suavemente la línea de sonrisa previa en la región de la boca
+    patch = Image.new("RGBA", s.size, (0, 0, 0, 0))
+    d_p = ImageDraw.Draw(patch)
+    d_p.ellipse([MOUTH_CENTER_X - w_box - 2, MOUTH_CENTER_Y - h_box//2 - 3, 
+                 MOUTH_CENTER_X + w_box + 2, MOUTH_CENTER_Y + h_box//2 + 3], fill=skin_tone)
+    patch = patch.filter(ImageFilter.GaussianBlur(radius=2))
+    s.paste(patch, (0, 0), patch)
+    
+    # 2. Dibujar la nueva forma de boca anime abierta
+    draw = ImageDraw.Draw(s)
+    x0, y0 = MOUTH_CENTER_X - w_box, MOUTH_CENTER_Y - h_box // 2
+    x1, y1 = MOUTH_CENTER_X + w_box, MOUTH_CENTER_Y + h_box // 2
+    
+    draw.ellipse([x0, y0, x1, y1], fill=mouth_inner, outline=mouth_lip_line, width=2)
+    if has_teeth:
+        draw.chord([x0 + 2, y0, x1 - 2, y0 + max(3, int(h_box * 0.45))], start=0, end=180, fill=mouth_teeth)
+    if has_tongue:
+        draw.chord([x0 + 3, y1 - max(4, int(h_box * 0.55)), x1 - 3, y1], start=180, end=360, fill=mouth_tongue)
+        
+    return s
 
 def crear_sprites_visemas(base_cutout_path: Path, output_dir: Path) -> dict:
     """
-    Genera el conjunto de sprites de visemas (formas de boca) anatómicamente centrados en la Waifu:
-    - closed (boca cerrada/reposo)
-    - small (vocal media e/i)
-    - medium (vocal abierta a/o)
-    - wide (exclamación/volumen alto)
-    - round (vocal redondeada u/w)
+    Genera el conjunto de sprites de visemas anatómicos limpios:
+    - closed (sonrisa cerrada original intacta)
+    - small (apertura sutil)
+    - medium (apertura expresiva)
+    - wide (exclamación / sílaba fuerte)
+    - round (vocal redondeada)
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     sprites = {}
     
     with Image.open(base_cutout_path) as img:
         base = img.convert("RGBA")
-        w, h = base.size
         
         # 1. Closed (Sprite base con sonrisa natural)
-        s_closed = base.copy()
         p_closed = output_dir / "viseme_closed.png"
-        s_closed.save(p_closed)
+        base.save(p_closed)
         sprites["closed"] = p_closed
         
-        mouth_inner_dark = (110, 25, 45, 255)
-        mouth_tongue = (245, 120, 140, 255)
-        mouth_teeth = (255, 255, 255, 255)
-        mouth_outline = (150, 40, 55, 255)
-        
-        # 2. Visema Small (Ligeramente abierta / e, i)
-        s_small = base.copy()
-        draw_sm = ImageDraw.Draw(s_small)
-        x0, y0 = MOUTH_CENTER_X - 10, MOUTH_CENTER_Y - 4
-        x1, y1 = MOUTH_CENTER_X + 10, MOUTH_CENTER_Y + 7
-        draw_sm.ellipse([x0, y0, x1, y1], fill=mouth_inner_dark, outline=mouth_outline, width=2)
-        draw_sm.chord([x0 + 2, y0, x1 - 2, y0 + 5], start=0, end=180, fill=mouth_teeth)
-        draw_sm.chord([x0 + 3, y1 - 5, x1 - 3, y1], start=180, end=360, fill=mouth_tongue)
+        # 2. Small (e, i)
+        s_small = _generar_visema_sprite(base, w_box=9, h_box=9, has_teeth=True, has_tongue=True)
         p_small = output_dir / "viseme_small.png"
         s_small.save(p_small)
         sprites["small"] = p_small
         
-        # 3. Visema Medium (Abierta expresiva / a, o)
-        s_med = base.copy()
-        draw_md = ImageDraw.Draw(s_med)
-        x0, y0 = MOUTH_CENTER_X - 14, MOUTH_CENTER_Y - 5
-        x1, y1 = MOUTH_CENTER_X + 14, MOUTH_CENTER_Y + 11
-        draw_md.ellipse([x0, y0, x1, y1], fill=mouth_inner_dark, outline=mouth_outline, width=2)
-        draw_md.chord([x0 + 3, y0, x1 - 3, y0 + 7], start=0, end=180, fill=mouth_teeth)
-        draw_md.chord([x0 + 4, y1 - 8, x1 - 4, y1], start=180, end=360, fill=mouth_tongue)
+        # 3. Medium (a, o)
+        s_med = _generar_visema_sprite(base, w_box=13, h_box=14, has_teeth=True, has_tongue=True)
         p_med = output_dir / "viseme_medium.png"
         s_med.save(p_med)
         sprites["medium"] = p_med
         
-        # 4. Visema Wide (Exclamación / Gran apertura)
-        s_wide = base.copy()
-        draw_wd = ImageDraw.Draw(s_wide)
-        x0, y0 = MOUTH_CENTER_X - 17, MOUTH_CENTER_Y - 7
-        x1, y1 = MOUTH_CENTER_X + 17, MOUTH_CENTER_Y + 17
-        draw_wd.ellipse([x0, y0, x1, y1], fill=mouth_inner_dark, outline=mouth_outline, width=2)
-        draw_wd.chord([x0 + 4, y0, x1 - 4, y0 + 9], start=0, end=180, fill=mouth_teeth)
-        draw_wd.chord([x0 + 5, y1 - 10, x1 - 5, y1], start=180, end=360, fill=mouth_tongue)
+        # 4. Wide (volumen alto / énfasis)
+        s_wide = _generar_visema_sprite(base, w_box=16, h_box=18, has_teeth=True, has_tongue=True)
         p_wide = output_dir / "viseme_wide.png"
         s_wide.save(p_wide)
         sprites["wide"] = p_wide
         
-        # 5. Visema Round (Boca en O/U)
-        s_rnd = base.copy()
-        draw_rn = ImageDraw.Draw(s_rnd)
-        x0, y0 = MOUTH_CENTER_X - 8, MOUTH_CENTER_Y - 6
-        x1, y1 = MOUTH_CENTER_X + 8, MOUTH_CENTER_Y + 10
-        draw_rn.ellipse([x0, y0, x1, y1], fill=mouth_inner_dark, outline=mouth_outline, width=2)
-        draw_rn.chord([x0 + 2, y1 - 5, x1 - 2, y1], start=180, end=360, fill=mouth_tongue)
+        # 5. Round (u, w)
+        s_rnd = _generar_visema_sprite(base, w_box=8, h_box=12, has_teeth=False, has_tongue=True)
         p_rnd = output_dir / "viseme_round.png"
         s_rnd.save(p_rnd)
         sprites["round"] = p_rnd

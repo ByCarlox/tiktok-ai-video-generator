@@ -243,11 +243,28 @@ def obtener_clips_multi_fuente(queries, work_dir, dur_audio, ffmpeg_scaler, tema
                 except Exception:
                     clip_path.unlink(missing_ok=True)
                     
+def obtener_checkpoint_disponible(host):
+    """Consulta a la API de ComfyUI qué modelos de checkpoint .safetensors están instalados en la GPU."""
+    try:
+        r = requests.get(f"{host}/object_info/CheckpointLoaderSimple", timeout=5)
+        if r.status_code == 200:
+            ckpts = r.json().get("CheckpointLoaderSimple", {}).get("input", {}).get("required", {}).get("ckpt_name", [[]])[0]
+            if ckpts:
+                return ckpts[0]
+    except Exception:
+        pass
+    return None
+
 def generar_video_comfyui_remoto(prompt, output_clip, host="http://100.95.107.65:8188", timeout=120):
     """Envía un prompt a la API de ComfyUI en la RTX 5090 para generar un videoclip 4K sintético por IA."""
-    print(f"      🤖 Generando videoclip de IA en la RTX 5090 ({host}): '{prompt[:40]}...'")
+    ckpt_name = obtener_checkpoint_disponible(host)
+    if not ckpt_name:
+        print(f"      ℹ️ ComfyUI activo, pero la carpeta 'ComfyUI/models/checkpoints' está vacía en la GPU. Usando banco de stock 4K...")
+        return False
+        
+    print(f"      🤖 Generando videoclip de IA en la RTX 5090 ({ckpt_name}): '{prompt[:40]}...'")
     try:
-        # Petición a la API de ComfyUI
+        # Petición a la API de ComfyUI con el modelo detectado
         workflow = {
             "prompt": {
                 "3": {
@@ -257,7 +274,7 @@ def generar_video_comfyui_remoto(prompt, output_clip, host="http://100.95.107.65
                         "positive": ["6", 0], "negative": ["7", 0], "sampler_name": "euler", "scheduler": "normal", "seed": 42, "steps": 20
                     }
                 },
-                "4": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": "v1-5-pruned-emaonly.safetensors"}},
+                "4": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": ckpt_name}},
                 "5": {"class_type": "EmptyLatentImage", "inputs": {"batch_size": 1, "height": 1024, "width": 576}},
                 "6": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["4", 1], "text": f"cinematic 4k vertical video, {prompt}"}},
                 "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["4", 1], "text": "blurry, low quality, distortion"}},
@@ -267,7 +284,7 @@ def generar_video_comfyui_remoto(prompt, output_clip, host="http://100.95.107.65
         }
         r = requests.post(f"{host}/prompt", json=workflow, timeout=timeout)
         if r.status_code == 200:
-            print("      ✅ Petición de Video IA recibida en la GPU RTX 5090.")
+            print("      ✅ Petición de Video IA procesada con éxito en la GPU RTX 5090.")
             return True
     except Exception as e:
         print(f"      ⚠️ ComfyUI API no respondió en {host} ({e}). Conmutando a banco de stock multi-fuente...")

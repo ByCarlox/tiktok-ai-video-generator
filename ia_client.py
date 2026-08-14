@@ -208,7 +208,7 @@ def generar_prompts_imagenes(tema: str) -> list:
         return [f"Cinematic vertical 9:16 image about {tema}, dramatic lighting, no text"] * 4
 
 
-PROMPT_IMAGENES_GUION = """Analiza este guion de TikTok y sus datos de investigación técnica para generar exactamente {n} prompts de imágenes (en inglés) que tengan un 100% de coherencia y concordancia visual con el tema tratado.
+PROMPT_IMAGENES_GUION = """Analiza este guion de TikTok y su investigación técnica para generar exactamente {n} prompts fotográficos en inglés con 100% de coherencia visual directa con el tema.
 
 TEMA Y GUION:
 "{guion}"
@@ -216,13 +216,14 @@ TEMA Y GUION:
 ELEMENTOS VISUALES INVESTIGADOS:
 {elementos_visuales}
 
-REQUISITOS DE CONCORDANCIA Y CALIDAD:
-- Cada prompt debe describir de forma ultra-precisa el objeto, tecnología, entorno o concepto específico mencionado en esa escena (MÍNIMO 75% de concordancia directa).
-- Estilo visual: photorealistic, 8k resolution, cinematic lighting, masterfully composed, 9:16 vertical orientation, hyperrealistic details.
-- PROHIBIDO: animales fuera de contexto, objetos irrelevantes, personas famosas reales, texto superpuesto, agua o marcas.
-- Idioma: Inglés.
+FÓRMULA ESTRICTA PARA CADA PROMPT (EN INGLÉS):
+1. SUJETO: El dispositivo, hardware, nave, chip, laboratorio o concepto físico exacto de esa parte del guion.
+2. TIPO DE PLANO: Extreme macro closeup / Eye-level product shot / Cinematic wide shot.
+3. ILUMINACIÓN Y FONDO: Studio lighting, clean obsidian or high-tech background, neon cyan and gold volumetric highlights.
+4. ESTILO: Photorealistic, 8k resolution, crisp focus, cinematic vertical composition.
+5. PROHIBIDO: Texto, letras, marcas de agua, personas con rostros deformes, conceptos abstractos genéricos.
 
-Devuelve SOLO un JSON válido con formato:
+Devuelve EXCLUSIVAMENTE un JSON válido sin markdown:
 {{"prompts": ["prompt_escena_1", "prompt_escena_2", ..., "prompt_escena_{n}"]}}"""
 
 def generar_prompts_para_guion(guion: str, n: int, investigacion: dict = None) -> list:

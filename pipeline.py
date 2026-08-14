@@ -618,13 +618,9 @@ def paso_imagenes(prompts, work, n, tema="", investigacion=None):
                                 "-vf", f"scale={target_w}:{target_h}:force_original_aspect_ratio=increase,crop={target_w}:{target_h},setsar=1",
                                 f"i{idx_actual}.jpg"], f"escalando {idx_actual}", cwd=work)
                     (work / f"tmp_{idx_actual}.jpg").unlink(missing_ok=True)
-                    rutas.append(f"i{idx_actual}.jpg")
-                    
-    return rutas
-
-# ---------- 6. RENDER PRO ----------
+     # ---------- 6. MASTER BROADCAST RENDER (MULTI-LAYER SUITE) ----------
 def paso_render_pillow(imagenes, videos, audio, srt_path, musica, salida, work):
-    print("   🎬 Render PRO con Subtítulos Quemados en Pillow...")
+    print("   🎬 Master Broadcast Video Assembler (Avatar + 3D Product + B-Roll + Waveform)...")
     
     # 1. Copiar y resolver rutas
     if Path(audio).resolve() != (work / "a.mp3").resolve():
@@ -640,55 +636,78 @@ def paso_render_pillow(imagenes, videos, audio, srt_path, musica, salida, work):
     config = cfg()
     res_type = config.get("resolucion", "1080p").lower()
     w, h = (2160, 3840) if res_type == "4k" else (1080, 1920)
-    crf = config.get("calidad_crf", 15)
+    crf = config.get("calidad_crf", 14)
     
-    # 2. Generar el fondo del video (background.mp4) de forma resiliente
-    bg_generado = False
-    videos_validos = []
+    # 2. Construir segmentos de video normalizados (Exact 30fps yuv420p)
+    segments = []
+    seg_idx = 0
+    
+    # A. Integrar clips de video (Avatar Host + B-Rolls de ComfyUI / Stock)
     if videos:
         for v in videos:
             v_p = Path(v) if Path(v).is_absolute() else (work / v)
             if v_p.exists() and v_p.stat().st_size > 5000:
-                videos_validos.append(v_p)
-                
-    if videos_validos:
-        print(f"      🎞️ Concatenando {len(videos_validos)} videoclips para el fondo...")
-        try:
-            with open(work / "concat_videos.txt", "w", encoding="utf-8") as f:
-                for v_p in videos_validos:
-                    f.write(f"file '{v_p.resolve()}'\n")
-            run_ffmpeg([
-                "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", "concat_videos.txt",
-                "-vf", f"scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},setsar=1",
-                "-r", "30", "-pix_fmt", "yuv420p", "background.mp4"
-            ], "concatenando clips de fondo", cwd=work)
-            if (work / "background.mp4").exists() and (work / "background.mp4").stat().st_size > 10000:
-                bg_generado = True
-        except Exception as e:
-            print(f"      ⚠️ Concatenación de clips falló ({e}). Conmutando automáticamente a fondo de imágenes...")
-            
-    if not bg_generado:
-        print("      🖼️ Creando fondo a partir de imágenes estáticas / Hero Products...")
-        imgs_validas = []
+                seg_file = work / f"seg_{seg_idx:02d}.mp4"
+                cmd_norm = [
+                    "ffmpeg", "-y", "-i", str(v_p.resolve()),
+                    "-vf", f"scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},setsar=1",
+                    "-r", "30", "-pix_fmt", "yuv420p", "-an", "-t", "5.0",
+                    str(seg_file.resolve())
+                ]
+                subprocess.run(cmd_norm, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                if seg_file.exists() and seg_file.stat().st_size > 5000:
+                    segments.append(seg_file)
+                    seg_idx += 1
+                    
+    # B. Integrar imágenes y tarjetas 3D con animación cinemática Ken Burns
+    if imagenes:
         for img in imagenes:
             img_p = Path(img) if Path(img).is_absolute() else (work / img)
             if img_p.exists() and img_p.stat().st_size > 1000:
-                imgs_validas.append(img_p)
-        if not imgs_validas:
-            imgs_validas = [work / "i0.jpg"]
+                seg_file = work / f"seg_{seg_idx:02d}.mp4"
+                cmd_img = [
+                    "ffmpeg", "-y", "-loop", "1", "-i", str(img_p.resolve()),
+                    "-vf", f"scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},"
+                           f"zoompan=z='min(zoom+0.0014,1.14)':d=120:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={w}x{h}",
+                    "-t", "4.0", "-r", "30", "-pix_fmt", "yuv420p", "-an",
+                    str(seg_file.resolve())
+                ]
+                subprocess.run(cmd_img, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                if seg_file.exists() and seg_file.stat().st_size > 5000:
+                    segments.append(seg_file)
+                    seg_idx += 1
+                    
+    if not segments:
+        print("      ⚠️ No se detectaron segmentos válidos. Creando segmento de rescate...")
+        res_file = work / "seg_00.mp4"
+        subprocess.run([
+            "ffmpeg", "-y", "-f", "lavfi", "-i", f"color=c=black:s={w}x{h}:d={dur_audio + 1}",
+            "-r", "30", "-pix_fmt", "yuv420p", str(res_file.resolve())
+        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        segments = [res_file]
+        
+    # C. Repetir segmentos en bucle si la duración es menor que el audio
+    list_segs = []
+    accum_dur = 0.0
+    seg_dur_approx = 4.0
+    while accum_dur < (dur_audio + 2.0):
+        for s in segments:
+            list_segs.append(s)
+            accum_dur += seg_dur_approx
+            if accum_dur >= (dur_audio + 2.0):
+                break
+                
+    # D. Escribir lista de concatenación y unir en background.mp4
+    with open(work / "concat_master.txt", "w", encoding="utf-8") as f:
+        for s in list_segs:
+            f.write(f"file '{s.resolve()}'\n")
             
-        D = max(3.5, (dur_audio + 1) / len(imgs_validas))
-        with open(work / "concat_imgs.txt", "w", encoding="utf-8") as f:
-            for img_p in imgs_validas:
-                f.write(f"file '{img_p.resolve()}'\nduration {D:.2f}\n")
-            f.write(f"file '{imgs_validas[-1].resolve()}'\n")
-        run_ffmpeg([
-            "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", "concat_imgs.txt",
-            "-vf", f"scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},setsar=1",
-            "-r", "30", "-pix_fmt", "yuv420p", "background.mp4"
-        ], "creando fondo de imagenes", cwd=work)
+    run_ffmpeg([
+        "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", "concat_master.txt",
+        "-c", "copy", "background.mp4"
+    ], "concatenando master background", cwd=work)
 
-    # 3. Leer subtítulos SRT
+    # 3. Leer subtítulos SRT y generar overlay
     srt_content = Path(srt_path).read_text(encoding="utf-8")
     entries = parse_srt(srt_content)
     if not entries:
@@ -696,13 +715,11 @@ def paso_render_pillow(imagenes, videos, audio, srt_path, musica, salida, work):
         
     timeline = []
     current_time = 0.0
-    
     if entries[0][0] > 0.0:
         timeline.append((0.0, entries[0][0], ""))
         current_time = entries[0][0]
         
     font_path = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
-    
     for idx, (start, end, text) in enumerate(entries):
         if start > current_time + 0.05:
             timeline.append((current_time, start, ""))
@@ -717,12 +734,9 @@ def paso_render_pillow(imagenes, videos, audio, srt_path, musica, salida, work):
         duration = end - start
         if duration <= 0.01:
             continue
-            
         frame_name = f"sub_{f_idx:03d}.png"
         frame_path = work / frame_name
-        
         draw_transparent_subtitle(text, frame_path, width=w, height=h, font_path=font_path)
-        
         concat_lines.append(f"file '{frame_name}'\nduration {duration:.3f}\n")
         
     if concat_lines:
@@ -732,29 +746,45 @@ def paso_render_pillow(imagenes, videos, audio, srt_path, musica, salida, work):
         
     (work / "concat_subtitles.txt").write_text("".join(concat_lines), encoding="utf-8")
     
-    # 4. Mezclar fondo, subtítulos overlay y audio
+    # 5. Mezclar fondo, onda reactiva, subtítulos overlay y audio masterizado
+    max_mbps = config.get("compositor", {}).get("bitrate_max_mbps", 40)
     cmd = [
         "ffmpeg", "-y",
         "-i", "background.mp4",
+        "-loop", "1", "-i", "audio_waveform.png",
         "-f", "concat", "-safe", "0", "-i", "concat_subtitles.txt",
         "-i", "a.mp3"
     ]
     if tiene_musica:
         cmd += ["-stream_loop", "-1", "-i", "m.mp3"]
-        fc = ("[0:v][1:v]overlay=0:0[outv];"
-              "[3:a]volume=0.25[m];[m][2:a]sidechaincompress="
-              "threshold=0.03:ratio=8:attack=5:release=300[md];"
-              "[2:a][md]amix=inputs=2:duration=first:dropout_transition=0[outa]")
+        fc = ("[0:v][1:v]overlay=0:0[v_wave];"
+              "[v_wave][2:v]overlay=0:0[outv];"
+              "[4:a]volume=0.25[m];[m][3:a]sidechaincompress="
+              "threshold=0.125:ratio=6:attack=15:release=250[ducked];"
+              "[ducked][3:a]amix=inputs=2:duration=first:dropout_transition=2,"
+              "loudnorm=I=-14:LRA=11:TP=-1.5[outa]")
+        cmd += [
+            "-filter_complex", fc,
+            "-map", "[outv]",
+            "-map", "[outa]"
+        ]
     else:
-        fc = "[0:v][1:v]overlay=0:0[outv];[2:a]anull[outa]"
+        fc = "[0:v][1:v]overlay=0:0[v_wave];[v_wave][2:v]overlay=0:0[outv]"
+        cmd += [
+            "-filter_complex", fc,
+            "-map", "[outv]",
+            "-map", "3:a"
+        ]
         
-    cmd += ["-filter_complex", fc, "-map", "[outv]", "-map", "[outa]"]
-    max_mbps = config.get("compositor", {}).get("bitrate_max_mbps", 40)
-    cmd += ["-c:v", "libx264", "-preset", "medium", "-crf", str(crf),
-            "-maxrate", f"{max_mbps}M", "-bufsize", f"{max_mbps * 2}M", "-pix_fmt", "yuv420p",
-            "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", str(salida.resolve())]
-            
-    run_ffmpeg(cmd, "render overlay", cwd=work)
+    cmd += [
+        "-c:v", "libx264", "-preset", "slow", "-crf", str(crf),
+        "-maxrate", f"{max_mbps}M", "-bufsize", f"{max_mbps * 2}M",
+        "-c:a", "aac", "-b:a", "320k",
+        "-pix_fmt", "yuv420p", "-shortest",
+        "-movflags", "+faststart",
+        str(salida.resolve())
+    ]
+    run_ffmpeg(cmd, "renderizando video master broadcast con subtitulos y efectos", cwd=work)
 
 def paso_render(imagenes, audio, srt, musica, salida, work):
     print(f"   🎬 Render PRO ({len(imagenes)} escenas + crossfade + ducking)...")
@@ -951,8 +981,8 @@ async def procesar_tema(tema, indice):
                     host_host = config.get("avatar_presentador", {}).get("host", "http://100.95.107.65:8188")
                     host_ok = generar_avatar_en_rtx5090(avatar_host_img, host=host_host, tema=tema)
                     if host_ok:
-                        # Animar con sincronización de voz y gesticulación del visor
-                        ok_intro = generar_clip_avatar_lipsync(avatar_host_img, work / "a_voz.mp3", intro_host_clip)
+                        # Animar con sincronización de voz y gesticulación del visor (3.5s)
+                        ok_intro = generar_clip_avatar_lipsync(avatar_host_img, work / "a_voz.mp3", intro_host_clip, duracion_max=3.5)
                         if not ok_intro:
                             ok_intro = crear_clip_intro_presentador(avatar_host_img, intro_host_clip, duracion=3.5)
                         if ok_intro and intro_host_clip.exists():
@@ -961,6 +991,20 @@ async def procesar_tema(tema, indice):
                             
             fotos = paso_imagenes(prompts, work, n_fotos, tema=tema, investigacion=investigacion)
             imagenes = ["i0.jpg"] + fotos
+            
+            # Integrar clip 3D de levitación para la tarjeta de producto real
+            if (work / "i1.jpg").exists():
+                clip_prod_3d = work / "v_product_3d.mp4"
+                if not clip_prod_3d.exists():
+                    res_type = config.get("resolucion", "1080p").lower()
+                    tw, th = (2160, 3840) if res_type == "4k" else (1080, 1920)
+                    ok_p3d = crear_clip_producto_3d_flotante(work / "i1.jpg", clip_prod_3d, duracion=4.0, width=tw, height=th)
+                    if ok_p3d and clip_prod_3d.exists():
+                        print(f"      💎 Clip de Producto 3D Flotante integrado a la línea de tiempo.")
+                        if len(videos) >= 1:
+                            videos.insert(1, str(clip_prod_3d.resolve()))
+                        else:
+                            videos.append(str(clip_prod_3d.resolve()))
             
             # 7 render
             print(f"   [7/10] Render {'(regenerando)' if intento > 1 else ''}...")

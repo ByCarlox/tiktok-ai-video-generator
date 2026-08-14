@@ -11,19 +11,18 @@ import numpy as np
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter, ImageOps
 
-def obtener_amplitudes_audio(audio_path: Path, fps: int = 30) -> list:
-    """Extrae las amplitudes RMS normalizadas (0.0 a 1.0) para cada fotograma de video a partir del audio."""
+def obtener_amplitudes_audio(audio_path: Path, fps: int = 30, duracion_max: float = 3.5) -> list:
+    """Extrae las amplitudes RMS normalizadas (0.0 a 1.0) para los primeros segundos de locución."""
     try:
-        # Usar FFmpeg para exportar audio raw PCM de 16-bit a 16kHz
         cmd = [
-            "ffmpeg", "-y", "-i", str(audio_path.resolve()),
+            "ffmpeg", "-y", "-t", str(duracion_max), "-i", str(audio_path.resolve()),
             "-ac", "1", "-ar", "16000", "-f", "s16le", "-"
         ]
         res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         raw_bytes = res.stdout
         
         if not raw_bytes:
-            return [0.0] * 90
+            return [0.4] * int(duracion_max * fps)
             
         samples = np.frombuffer(raw_bytes, dtype=np.int16)
         samples_per_frame = int(16000 / fps)
@@ -32,21 +31,19 @@ def obtener_amplitudes_audio(audio_path: Path, fps: int = 30) -> list:
         amplitudes = []
         for i in range(num_frames):
             chunk = samples[i * samples_per_frame:(i + 1) * samples_per_frame]
-            # Calcular RMS
             rms = np.sqrt(np.mean(chunk.astype(np.float32)**2))
-            # Normalizar a 0.0 - 1.0 con umbral de ruido
             norm = min(1.0, max(0.0, (rms - 200) / 4500.0))
             amplitudes.append(norm)
             
         return amplitudes
     except Exception as e:
         print(f"      ⚠️ Error extrayendo amplitudes de audio: {e}")
-        return [0.5] * 90
+        return [0.4] * int(duracion_max * fps)
 
-def generar_clip_avatar_lipsync(avatar_img_path: Path, audio_path: Path, output_clip: Path, width: int = 1080, height: int = 1920, fps: int = 30) -> bool:
+def generar_clip_avatar_lipsync(avatar_img_path: Path, audio_path: Path, output_clip: Path, width: int = 1080, height: int = 1920, fps: int = 30, duracion_max: float = 3.5) -> bool:
     """
     Genera un clip de video MP4 del presentador virtual donde el visor cibernético,
-    la respiración y los movimientos de cabeza están sincronizados al audio de locución.
+    la respiración y los movimientos de cabeza están sincronizados al audio de locución del hook.
     """
     output_clip = Path(output_clip)
     output_clip.parent.mkdir(parents=True, exist_ok=True)
@@ -56,13 +53,13 @@ def generar_clip_avatar_lipsync(avatar_img_path: Path, audio_path: Path, output_
     if not avatar_img_path.exists() or not audio_path.exists():
         return False
         
-    print(f"      🗣️ Sintetizando sincronización de gesticulación y visor con el audio...")
+    print(f"      🗣️ Sintetizando sincronización de gesticulación y visor ({duracion_max}s)...")
     
     try:
-        amplitudes = obtener_amplitudes_audio(audio_path, fps=fps)
+        amplitudes = obtener_amplitudes_audio(audio_path, fps=fps, duracion_max=duracion_max)
         total_frames = len(amplitudes)
         if total_frames == 0:
-            total_frames = int(3.5 * fps)
+            total_frames = int(duracion_max * fps)
             amplitudes = [0.4] * total_frames
             
         with Image.open(avatar_img_path) as orig_img:

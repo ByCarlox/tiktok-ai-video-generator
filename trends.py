@@ -64,27 +64,54 @@ def tendencias_google(paises, categorias):
     return resultados[:20] if resultados else categorias
 
 def tendencias_rss():
-    """Fuente principal: RSS especializados en tech, IA, ciencia y datos (sin sesgo regional)."""
+    """Fuente principal: RSS especializados en tech, IA, ciencia espacial, hardware y misterios de la ciencia."""
     feeds = [
-        # Tech & IA en español (medios internacionales, no regionales)
+        # 1. Inteligencia Artificial & Robótica (Español e Inglés)
+        "https://www.xataka.com/categoria/inteligencia-artificial/feed",
+        "https://www.genbeta.com/categoria/inteligencia-artificial/feed",
+        "https://techcrunch.com/category/artificial-intelligence/feed/",
+        "https://venturebeat.com/category/ai/feed/",
+        "https://www.theverge.com/ai-artificial-intelligence/rss/index.xml",
+        "https://wwwhatsnew.com/feed/",
+        
+        # 2. Ciencia Espacial, James Webb & Física Cuántica
+        "https://feeds.bbci.co.uk/mundo/temas/ciencia/rss.xml",
+        "https://elpais.com/ciencia/rss/feed.html",
+        "https://feeds.arstechnica.com/arstechnica/science",
+        "https://www.space.com/feeds/news",
+        "https://phys.org/rss-feed/space-news/",
+        "https://phys.org/rss-feed/physics-news/",
+        
+        # 3. Hardware Extremo, Gadgets & Superchips (RTX, M-series, Cuántica)
         "https://www.xataka.com/feed",
         "https://hipertextual.com/feed",
-        "https://wwwhatsnew.com/feed/",
-        "https://www.genbeta.com/feed",
-        # Ciencia en español
-        "https://feeds.bbci.co.uk/mundo/temas/ciencia/rss.xml",
-        "https://elpais.com/tecnologia/rss/feed.html",
-        # Tech en inglés (temas universales, alcance global)
-        "https://www.theverge.com/rss/index.xml",
+        "https://wccftech.com/feed/",
+        "https://videocardz.com/rss-feed",
+        "https://9to5mac.com/feed/",
+        
+        # 4. Misterios de la Ciencia, Biología & Descubrimientos Fascinantes
+        "https://www.nationalgeographic.com.es/medio/rss.xml",
+        "https://www.muyinteresante.com/ciencia/feed",
+        "https://phys.org/rss-feed/biology-news/",
+        
+        # 5. Startups, Innovación & Economía del Futuro (USD)
         "https://techcrunch.com/feed/",
-        "https://feeds.arstechnica.com/arstechnica/science",
+        "https://www.theverge.com/rss/index.xml",
     ]
     titulos = []
+    vistos = set()
     for url in feeds:
         try:
             feed = feedparser.parse(url)
-            for entry in feed.entries[:4]:
-                titulos.append(entry.title)
+            for entry in feed.entries[:5]:
+                t = entry.title
+                if " - " in t:
+                    t = t.rsplit(" - ", 1)[0]
+                t = t.strip()
+                t_key = t.lower()[:35]
+                if t_key not in vistos and len(t) > 15:
+                    vistos.add(t_key)
+                    titulos.append(t)
         except:
             pass
     return titulos

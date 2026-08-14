@@ -143,31 +143,58 @@ def descargar_video_clips(tema, work, dur_audio, guion="", investigacion=None):
     # 2. Obtener usando flujo híbrido (IA ComfyUI en RTX 5090 + Fallback Stock Multi-Fuente)
     return obtener_clips_multi_fuente_hibrido(queries, work, dur_audio, ffmpeg_scaler, tema=tema, pre_eval_func=evaluar_asset_video)
 
+PALABRAS_CLAVE_HIGHLIGHT = {
+    "ia", "ai", "chatgpt", "openai", "gpu", "rtx", "5090", "m4", "apple", "google", "meta",
+    "secreto", "millones", "dólares", "usd", "dinero", "impacto", "descubrió", "peligro",
+    "nuevo", "nueva", "increíble", "fusión", "cuántica", "universo", "marte", "robot",
+    "futuro", "prohibido", "muerte", "revolución", "humano", "cerebro", "nasa", "spacex",
+    "4k", "8k", "35b", "100%", "primera", "oficial", "historia", "windows", "mac", "chip"
+}
+
+def es_palabra_resaltada(palabra: str) -> bool:
+    clean = re.sub(r"[^\w]", "", palabra.lower())
+    if any(char.isdigit() for char in clean):
+        return True
+    if "$" in palabra or "%" in palabra:
+        return True
+    return clean in PALABRAS_CLAVE_HIGHLIGHT
+
+def obtener_fuente_viral(font_size=60):
+    for fpath in [
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Supplemental/Arial Black.ttf",
+        "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+        "/Library/Fonts/Arial Black.ttf"
+    ]:
+        if Path(fpath).exists():
+            try:
+                return ImageFont.truetype(fpath, font_size)
+            except Exception:
+                pass
+    try:
+        return ImageFont.truetype("Arial", font_size)
+    except Exception:
+        return ImageFont.load_default()
+
 def draw_transparent_subtitle(text, output_path, width=1080, height=1920, font_path=None, font_size=60):
     img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     W, H = img.size
     
     if W >= 2000:
-        font_size = 110
-        stroke_width = 10
-        spacing = 24
+        font_size = 125
+        stroke_width = 12
+        spacing = 26
     else:
-        font_size = 60
-        stroke_width = 6
-        spacing = 12
+        font_size = 68
+        stroke_width = 7
+        spacing = 14
         
     if not text:
         img.save(output_path, "PNG")
         return
         
-    if font_path and Path(font_path).exists():
-        font = ImageFont.truetype(str(font_path), font_size)
-    else:
-        try:
-            font = ImageFont.truetype("Arial", font_size)
-        except IOError:
-            font = ImageFont.load_default()
+    font = obtener_fuente_viral(font_size)
             
     words = text.split()
     lines = []
@@ -177,36 +204,61 @@ def draw_transparent_subtitle(text, output_path, width=1080, height=1920, font_p
         test_line = " ".join(current_line)
         bbox = draw.textbbox((0, 0), test_line, font=font)
         w = bbox[2] - bbox[0]
-        if w > W * 0.85 and len(current_line) > 1:
+        if w > W * 0.82 and len(current_line) > 1:
             current_line.pop()
-            lines.append(" ".join(current_line))
+            lines.append(current_line)
             current_line = [word]
     if current_line:
-        lines.append(" ".join(current_line))
+        lines.append(current_line)
         
-    y_offset = H * 0.7
+    y_offset = H * 0.70
     
     line_heights = []
-    for line in lines:
-        bbox = draw.textbbox((0, 0), line, font=font)
+    for line_words in lines:
+        line_str = " ".join(line_words)
+        bbox = draw.textbbox((0, 0), line_str, font=font)
         line_heights.append(bbox[3] - bbox[1])
     total_height = sum(line_heights) + (len(lines) - 1) * spacing
     
     current_y = y_offset - total_height / 2
     
-    for line in lines:
-        bbox = draw.textbbox((0, 0), line, font=font)
-        w = bbox[2] - bbox[0]
-        h = bbox[3] - bbox[1]
-        x = (W - w) / 2
+    space_bbox = draw.textbbox((0, 0), " ", font=font)
+    space_w = space_bbox[2] - space_bbox[0]
+    
+    for line_words in lines:
+        line_str = " ".join(line_words)
+        line_bbox = draw.textbbox((0, 0), line_str, font=font)
+        line_w = line_bbox[2] - line_bbox[0]
+        line_h = line_bbox[3] - line_bbox[1]
         
-        for dx in range(-stroke_width, stroke_width + 1):
-            for dy in range(-stroke_width, stroke_width + 1):
-                if dx*dx + dy*dy <= stroke_width*stroke_width:
-                    draw.text((x + dx, current_y + dy), line, font=font, fill=(0, 0, 0, 255))
-                    
-        draw.text((x, current_y), line, font=font, fill=(255, 255, 0, 255))
-        current_y += h + spacing
+        cur_x = (W - line_w) / 2
+        
+        # 1. Dibujar contorno grueso negro para todas las palabras
+        for word in line_words:
+            w_bbox = draw.textbbox((0, 0), word, font=font)
+            w_w = w_bbox[2] - w_bbox[0]
+            
+            for dx in range(-stroke_width, stroke_width + 1):
+                for dy in range(-stroke_width, stroke_width + 1):
+                    if dx*dx + dy*dy <= stroke_width*stroke_width:
+                        draw.text((cur_x + dx, current_y + dy), word, font=font, fill=(0, 0, 0, 255))
+            cur_x += w_w + space_w
+            
+        # 2. Dibujar relleno con resaltado inteligente (Amarillo Neón / Blanco Brillante / Cian)
+        cur_x = (W - line_w) / 2
+        for word in line_words:
+            w_bbox = draw.textbbox((0, 0), word, font=font)
+            w_w = w_bbox[2] - w_bbox[0]
+            
+            if es_palabra_resaltada(word):
+                color = (255, 230, 0, 255)  # Amarillo Neón MrBeast
+            else:
+                color = (255, 255, 255, 255)  # Blanco Puro Brillante
+                
+            draw.text((cur_x, current_y), word, font=font, fill=color)
+            cur_x += w_w + space_w
+            
+        current_y += line_h + spacing
         
     img.save(output_path, "PNG")
 
@@ -215,13 +267,16 @@ def draw_subtitle_on_image(image_path, text, output_path, font_path=None, font_s
     draw = ImageDraw.Draw(img)
     W, H = img.size
     
-    if font_path and Path(font_path).exists():
-        font = ImageFont.truetype(str(font_path), font_size)
+    if W >= 2000:
+        font_size = 125
+        stroke_width = 12
+        spacing = 26
     else:
-        try:
-            font = ImageFont.truetype("Arial", font_size)
-        except IOError:
-            font = ImageFont.load_default()
+        font_size = 68
+        stroke_width = 7
+        spacing = 14
+        
+    font = obtener_fuente_viral(font_size)
             
     words = text.split()
     lines = []
@@ -231,22 +286,54 @@ def draw_subtitle_on_image(image_path, text, output_path, font_path=None, font_s
         test_line = " ".join(current_line)
         bbox = draw.textbbox((0, 0), test_line, font=font)
         w = bbox[2] - bbox[0]
-        if w > W * 0.85 and len(current_line) > 1:
+        if w > W * 0.82 and len(current_line) > 1:
             current_line.pop()
-            lines.append(" ".join(current_line))
+            lines.append(current_line)
             current_line = [word]
     if current_line:
-        lines.append(" ".join(current_line))
+        lines.append(current_line)
         
-    y_offset = H * 0.7
+    y_offset = H * 0.70
     
     line_heights = []
-    for line in lines:
-        bbox = draw.textbbox((0, 0), line, font=font)
+    for line_words in lines:
+        line_str = " ".join(line_words)
+        bbox = draw.textbbox((0, 0), line_str, font=font)
         line_heights.append(bbox[3] - bbox[1])
-    total_height = sum(line_heights) + (len(lines) - 1) * 12
+    total_height = sum(line_heights) + (len(lines) - 1) * spacing
     
     current_y = y_offset - total_height / 2
+    
+    space_bbox = draw.textbbox((0, 0), " ", font=font)
+    space_w = space_bbox[2] - space_bbox[0]
+    
+    for line_words in lines:
+        line_str = " ".join(line_words)
+        line_bbox = draw.textbbox((0, 0), line_str, font=font)
+        line_w = line_bbox[2] - line_bbox[0]
+        line_h = line_bbox[3] - line_bbox[1]
+        
+        cur_x = (W - line_w) / 2
+        for word in line_words:
+            w_bbox = draw.textbbox((0, 0), word, font=font)
+            w_w = w_bbox[2] - w_bbox[0]
+            for dx in range(-stroke_width, stroke_width + 1):
+                for dy in range(-stroke_width, stroke_width + 1):
+                    if dx*dx + dy*dy <= stroke_width*stroke_width:
+                        draw.text((cur_x + dx, current_y + dy), word, font=font, fill=(0, 0, 0, 255))
+            cur_x += w_w + space_w
+            
+        cur_x = (W - line_w) / 2
+        for word in line_words:
+            w_bbox = draw.textbbox((0, 0), word, font=font)
+            w_w = w_bbox[2] - w_bbox[0]
+            color = (255, 230, 0, 255) if es_palabra_resaltada(word) else (255, 255, 255, 255)
+            draw.text((cur_x, current_y), word, font=font, fill=color)
+            cur_x += w_w + space_w
+            
+        current_y += line_h + spacing
+        
+    img.save(output_path, "PNG")
     
     for line in lines:
         bbox = draw.textbbox((0, 0), line, font=font)

@@ -68,7 +68,22 @@ def generar_guion(tema: str, duracion: int = 40, investigacion: dict = None) -> 
         angulo=angulo
     )
     
-    if ia["proveedor"] in ("openai", "groq", "nvidia"):
+    if ia["proveedor"] in ("ollama_remote", "ollama"):
+        host = ia.get("host_remoto", "http://100.95.107.65:11434") if ia["proveedor"] == "ollama_remote" else "http://localhost:11434"
+        try:
+            r = requests.post(
+                f"{host}/api/generate",
+                json={"model": ia["modelo"], "prompt": prompt, "stream": False},
+                timeout=90
+            )
+            if r.status_code == 200:
+                res = r.json().get("response", "").strip()
+                if res:
+                    return res
+        except Exception as e:
+            print(f"   ⚠️ Conexión con {ia['proveedor']} ({host}) falló ({e}). Conmutando a Ollama local...")
+
+    elif ia["proveedor"] in ("openai", "groq", "nvidia"):
         try:
             base = ia.get("base_url", "https://integrate.api.nvidia.com/v1" if ia["proveedor"] == "nvidia" else "https://api.openai.com/v1")
             headers = {"Content-Type": "application/json"}

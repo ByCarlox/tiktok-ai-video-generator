@@ -27,10 +27,9 @@ voz: "es-US-AlonsoNeural"        # voz neutra panlatina hiper-expresiva de alta 
 
 # IA para guiones (elige una)
 ia:
-  proveedor: "nvidia"            # nvidia (nube gratis 70B) | ollama (local) | openai | groq
-  modelo: "meta/llama-3.1-70b-instruct"         # modelo masivo 70B gratis en supercomputador NVIDIA NIM
-  api_key: "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"
-  base_url: "https://integrate.api.nvidia.com/v1"
+  proveedor: "ollama_remote"     # ollama_remote (RTX 5090 vía Tailscale) | nvidia | ollama (local)
+  host_remoto: "http://100.95.107.65:11434"
+  modelo: "qwen3.6:35b"         # Modelo 36B masivo de alta capacidad en la GPU RTX 5090
 
 # IA para imágenes (elige una)
 imagenes:

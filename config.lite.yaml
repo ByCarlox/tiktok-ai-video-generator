@@ -1,0 +1,61 @@
+# config.lite.yaml - Configuración para PCs de Bajos Recursos / Portátiles Ligeras
+# Diseñado para funcionar 100% en local o con APIs gratuitas sin requerir GPU dedicada ni VPN
+
+idioma_tendencia: "es-419"       # Español latinoamericano neutro
+pais_tendencia:                  # Países para el radar de tendencias
+  - MX
+  - AR
+  - CO
+  - CL
+  - PE
+
+categorias:                      # Categorías con alta retención
+  - tecnologia
+  - inteligencia artificial
+  - ciencia
+  - innovacion
+  - productividad
+  - espacio
+
+numero_videos: 1                 # 1 video por ejecución en modo lite
+duracion_max_segundos: 35
+resolucion: "1080p"              # 1080x1920 (óptimo para render rápido en CPU)
+calidad_crf: 20                  # CRF estándar balanceado velocidad/peso
+moneda: "USD"
+
+voz: "es-US-AlonsoNeural"        # Voz neural hiper-expresiva de Edge-TTS (100% gratis)
+
+# Cerebro IA para guiones (Modo Lite: Ollama Local ligero o NVIDIA NIM gratis)
+ia:
+  proveedor: "ollama"            # "ollama" (local con qwen2.5:7b o llama3.2) o "nvidia"
+  modelo: "qwen2.5:7b"           # Modelo ligero que corre en CPU o laptops estándar
+  host_remoto: "http://localhost:11434"
+
+# Generación de imágenes y video stock (100% gratis en la nube / CDN)
+imagenes:
+  proveedor: "pollinations"      # Pollinations Flux (gratis en alta definición)
+
+video_ia:
+  proveedor: "stock_multi_fuente" # Pixabay, Pexels y Wikimedia Commons (sin necesidad de GPU)
+
+# Compositor Anti-Stretch (Cero deformación)
+compositor:
+  modo_encuadre: "smart_blur"    # Smart Backdrop Blur + Sombra 3D
+  sombra_3d: true
+  bitrate_max_mbps: 15
+
+# Fotos Reales de Producto
+fotos_reales:
+  activado: true                 # Wikipedia / Wikimedia Commons
+  cantidad_maxima: 2
+
+# Música libre de derechos
+musica:
+  proveedor: "pixabay"
+  api_key: "57048016-b2ebc50dee017a04e526b6d2b"
+  generos: ["electronic", "ambient", "cinematic", "pop", "lofi"]
+  carpeta: "assets/musica"
+  volumen: 0.08
+
+obsidian_vault: "TikTok-AI-Passive"
+salida_videos: "output/videos"

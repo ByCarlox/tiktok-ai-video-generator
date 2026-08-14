@@ -337,8 +337,8 @@ def obtener_clips_multi_fuente_hibrido(queries, work_dir, dur_audio, ffmpeg_scal
                 for idx, q in enumerate(queries[:3]):
                     out_v = work_dir / f"v{idx}.mp4"
                     ok = generar_video_comfyui_remoto(f"{tema}, {q}", out_v, host=host)
-                    if ok:
-                        rutas_ia.append(f"v{idx}.mp4")
+                    if ok and out_v.exists() and out_v.stat().st_size > 5000:
+                        rutas_ia.append(str(out_v.resolve()))
                 if rutas_ia:
                     return rutas_ia
         except Exception:

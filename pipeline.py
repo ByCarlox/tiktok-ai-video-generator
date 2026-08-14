@@ -623,23 +623,46 @@ def paso_render_pillow(imagenes, videos, audio, srt_path, musica, salida, work):
     w, h = (2160, 3840) if res_type == "4k" else (1080, 1920)
     crf = config.get("calidad_crf", 15)
     
-    # 2. Generar el fondo del video (background.mp4)
+    # 2. Generar el fondo del video (background.mp4) de forma resiliente
+    bg_generado = False
+    videos_validos = []
     if videos:
-        print(f"      🎞️ Concatenando {len(videos)} videoclips para el fondo...")
-        with open(work / "concat_videos.txt", "w") as f:
-            for v in videos:
-                f.write(f"file '{v}'\n")
-        run_ffmpeg([
-            "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", "concat_videos.txt",
-            "-c", "copy", "background.mp4"
-        ], "concatenando clips de fondo", cwd=work)
-    else:
-        print("      🖼️ Creando fondo a partir de imágenes estáticas...")
-        D = max(4.0, (dur_audio + 1) / len(imagenes))
-        with open(work / "concat_imgs.txt", "w") as f:
-            for img in imagenes:
-                f.write(f"file '{img}'\nduration {D:.2f}\n")
-            f.write(f"file '{imagenes[-1]}'\n")
+        for v in videos:
+            v_p = Path(v) if Path(v).is_absolute() else (work / v)
+            if v_p.exists() and v_p.stat().st_size > 5000:
+                videos_validos.append(v_p)
+                
+    if videos_validos:
+        print(f"      🎞️ Concatenando {len(videos_validos)} videoclips para el fondo...")
+        try:
+            with open(work / "concat_videos.txt", "w", encoding="utf-8") as f:
+                for v_p in videos_validos:
+                    f.write(f"file '{v_p.resolve()}'\n")
+            run_ffmpeg([
+                "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", "concat_videos.txt",
+                "-vf", f"scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},setsar=1",
+                "-r", "30", "-pix_fmt", "yuv420p", "background.mp4"
+            ], "concatenando clips de fondo", cwd=work)
+            if (work / "background.mp4").exists() and (work / "background.mp4").stat().st_size > 10000:
+                bg_generado = True
+        except Exception as e:
+            print(f"      ⚠️ Concatenación de clips falló ({e}). Conmutando automáticamente a fondo de imágenes...")
+            
+    if not bg_generado:
+        print("      🖼️ Creando fondo a partir de imágenes estáticas / Hero Products...")
+        imgs_validas = []
+        for img in imagenes:
+            img_p = Path(img) if Path(img).is_absolute() else (work / img)
+            if img_p.exists() and img_p.stat().st_size > 1000:
+                imgs_validas.append(img_p)
+        if not imgs_validas:
+            imgs_validas = [work / "i0.jpg"]
+            
+        D = max(3.5, (dur_audio + 1) / len(imgs_validas))
+        with open(work / "concat_imgs.txt", "w", encoding="utf-8") as f:
+            for img_p in imgs_validas:
+                f.write(f"file '{img_p.resolve()}'\nduration {D:.2f}\n")
+            f.write(f"file '{imgs_validas[-1].resolve()}'\n")
         run_ffmpeg([
             "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", "concat_imgs.txt",
             "-vf", f"scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},setsar=1",

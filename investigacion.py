@@ -6,6 +6,7 @@ Garantiza precisión conceptual, hechos comprobables y metáforas visuales de al
 import json
 import requests
 import yaml
+from pathlib import Path
 
 PROMPT_INVESTIGACION_ESTRUCTURADA = """Eres un científico, investigador senior y divulgador de tecnología de nivel mundial.
 Realiza una investigación profunda, rigurosa y estructurada sobre el siguiente tema para producir un video educativo viral de la más alta calidad:

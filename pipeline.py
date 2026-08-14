@@ -718,22 +718,22 @@ def paso_render_pillow(imagenes, videos, audio, srt_path, musica, salida, work):
     if not entries:
         entries = [(0.0, dur_audio, "")]
         
+    # Línea de tiempo estrictamente monótona y continua (cero desfase acumulativo)
     timeline = []
-    current_time = 0.0
-    if entries[0][0] > 0.0:
-        timeline.append((0.0, entries[0][0], ""))
-        current_time = entries[0][0]
+    curr_t = 0.0
+    for start, end, text in entries:
+        start = max(curr_t, start)
+        if start > curr_t:
+            timeline.append((curr_t, start, ""))
+            curr_t = start
+        if end > curr_t:
+            timeline.append((curr_t, end, text))
+            curr_t = end
+            
+    if curr_t < dur_audio:
+        timeline.append((curr_t, dur_audio, ""))
         
     font_path = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
-    for idx, (start, end, text) in enumerate(entries):
-        if start > current_time + 0.05:
-            timeline.append((current_time, start, ""))
-        timeline.append((start, end, text))
-        current_time = end
-        
-    if dur_audio > current_time + 0.05:
-        timeline.append((current_time, dur_audio, ""))
-        
     concat_lines = []
     for f_idx, (start, end, text) in enumerate(timeline):
         duration = end - start

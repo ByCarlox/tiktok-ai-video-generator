@@ -8,7 +8,7 @@ from hashlib import md5
 from pathlib import Path
 from urllib.parse import quote
 
-HEADERS = {"User-Agent": "TikTokAIProject/1.0 (contact: cf.tiktok.ai@gmail.com)"}
+HEADERS = {"User-Agent": "TikTokAIStudio/6.0 (https://github.com/ByCarlox/tiktok-ai-video-generator)"}
 
 # Lista curada de música premium de fondo (Wikimedia Commons CC-BY)
 FALLBACK_TRACKS = [

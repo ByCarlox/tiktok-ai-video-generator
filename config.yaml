@@ -27,9 +27,9 @@ voz: "es-US-AlonsoNeural"        # voz neutra panlatina hiper-expresiva de alta 
 
 # IA para guiones (elige una)
 ia:
-  proveedor: "ollama_remote"     # ollama_remote (RTX 5090 vía Tailscale) | nvidia | ollama (local)
-  host_remoto: "http://100.95.107.65:11434"
-  modelo: "qwen3.6:35b"         # Modelo 36B masivo de alta capacidad en la GPU RTX 5090
+  proveedor: "ollama_remote"     # ollama_remote (GPU Remota vía Tailscale) | nvidia | ollama (local)
+  host_remoto: "http://100.x.y.z:11434" # Tu IP privada de Tailscale o localhost
+  modelo: "qwen3.6:35b"         # Modelo 36B masivo de alta capacidad en la GPU remota
 
 # IA para imágenes y video (elige proveedor)
 imagenes:
@@ -38,7 +38,7 @@ imagenes:
 # Presentador Virtual Faceless (renderizado en GPU RTX 5090)
 avatar_presentador:
   activado: true                 # Genera un presentador virtual para el hook inicial del video
-  host: "http://100.95.107.65:8188"
+  host: "http://100.x.y.z:8188"  # Endpoint de ComfyUI en tu servidor
   estilo: "cyber_host"           # cyber_host | minimal_silhouette
 
 # Compositor Anti-Stretch (Cero deformación en imágenes 16:9 o 1:1)
@@ -53,8 +53,8 @@ fotos_reales:
   cantidad_maxima: 3
 
 video_ia:
-  proveedor: "comfyui_remote"    # comfyui_remote (RTX 5090 vía Tailscale) | stock_multi_fuente (fallback)
-  host_remoto: "http://100.95.107.65:8188"
+  proveedor: "comfyui_remote"    # comfyui_remote (GPU Remota vía Tailscale) | stock_multi_fuente (fallback)
+  host_remoto: "http://100.x.y.z:8188"
   modelo: "ltx_video"            # ltx_video | hunyuan_video | cogvideox
 
 obsidian_vault: "TikTok-AI-Passive"

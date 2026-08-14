@@ -13,8 +13,22 @@ import yaml
 from pathlib import Path
 
 def cfg():
-    with open("config.yaml", "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+    config = {}
+    if Path("config.yaml").exists():
+        with open("config.yaml", "r", encoding="utf-8") as f:
+            config = yaml.safe_load(f) or {}
+    if Path("config.local.yaml").exists():
+        try:
+            with open("config.local.yaml", "r", encoding="utf-8") as f:
+                local_cfg = yaml.safe_load(f) or {}
+                for k, v in local_cfg.items():
+                    if isinstance(v, dict) and isinstance(config.get(k), dict):
+                        config[k].update(v)
+                    else:
+                        config[k] = v
+        except Exception:
+            pass
+    return config
 
 # ---------- BUSCADOR WIKIMEDIA COMMONS (OPEN SOURCE / PUBLIC DOMAIN) ----------
 def buscar_wikimedia_commons(query, limit=5, media_type="video"):

@@ -23,8 +23,22 @@ Estructura tu investigación en formato JSON estricto con los siguientes campos:
 Devuelve EXCLUSIVAMENTE el JSON estricto sin explicaciones, sin introducciones y sin formato markdown."""
 
 def cfg():
-    with open("config.yaml", "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+    config = {}
+    if Path("config.yaml").exists():
+        with open("config.yaml", "r", encoding="utf-8") as f:
+            config = yaml.safe_load(f) or {}
+    if Path("config.local.yaml").exists():
+        try:
+            with open("config.local.yaml", "r", encoding="utf-8") as f:
+                local_cfg = yaml.safe_load(f) or {}
+                for k, v in local_cfg.items():
+                    if isinstance(v, dict) and isinstance(config.get(k), dict):
+                        config[k].update(v)
+                    else:
+                        config[k] = v
+        except Exception:
+            pass
+    return config
 
 def investigar_tema(tema: str) -> dict:
     """Ejecuta una investigación previa estructurada para fundamentar la creación del guion y del material visual."""

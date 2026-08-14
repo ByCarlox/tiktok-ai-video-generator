@@ -267,6 +267,19 @@ def main():
     print("🛡️  Filtrando por nicho tech/IA/ciencia...")
     trends = filtrar_tendencias(trends, config)
     
+    # 4. Filtro del Cerebro de Obsidian (Cero temas repetidos)
+    from obsidian_brain import verificar_duplicado
+    print("🧠 Consultando memoria de Obsidian para descartar temas ya tratados...")
+    trends_frescos = []
+    for t in trends:
+        es_dup, motivo, tema_antiguo = verificar_duplicado(t)
+        if es_dup:
+            print(f"   ⏭️  [Cerebro Obsidian] Descartado ({motivo}): {t[:55]}...")
+        else:
+            trends_frescos.append(t)
+            
+    trends = trends_frescos if trends_frescos else trends
+    
     # Limpiar y deduplicar
     trends = list(dict.fromkeys([t.strip() for t in trends if t]))
     

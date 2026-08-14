@@ -950,13 +950,12 @@ async def procesar_tema(tema, indice):
     dur_max = config.get("duracion_max_segundos", 40)
     slug = slugify(tema)
     
-    # Verificar duplicados en Obsidian para no repetir videos
-    vault = Path(config["obsidian_vault"]) / "03-Contenidos" / "Episodios"
-    if vault.exists():
-        for p in vault.iterdir():
-            if p.is_dir() and (p.name.endswith(f"-{slug}") or p.name == slug):
-                print(f"\n   ⚠️ OMITIDO: El tema '{tema}' ya tiene un episodio en Obsidian ({p.name}).")
-                return None
+    # 0. Consultar la memoria del Cerebro de Obsidian para evitar repeticiones
+    from obsidian_brain import verificar_duplicado, registrar_produccion_en_obsidian
+    es_dup, motivo, tema_antiguo = verificar_duplicado(tema)
+    if es_dup:
+        print(f"\n   🧠 [CEREBRO OBSIDIAN] OMITIDO: El tema '{tema}' ya fue tratado previamente ({motivo} -> '{tema_antiguo}').")
+        return None
 
     print(f"\n{'=' * 60}\n🎯 VIDEO {indice}: {tema}\n{'=' * 60}")
     work = Path("output/work") / slug
@@ -1071,8 +1070,24 @@ async def procesar_tema(tema, indice):
         meta["qa_intentos"] = intento
         meta["qa_aprobado"] = veredicto.get("aprobado", True)
         
-        print("   [10/10] Actualizando Obsidian y publicando...")
-        actualizar_obsidian_con_metadata(tema, guion, salida, prompts, meta)
+        print("   [10/10] Actualizando Cerebro de Obsidian y publicando...")
+        categoria_ppal = config.get("categorias", ["Tecnología"])[0] if config.get("categorias") else "Tecnología"
+        h_tags = meta.get("hashtags", [])
+        if isinstance(h_tags, list):
+            h_tags_str = " ".join([f"#{t}" if not t.startswith("#") else t for t in h_tags])
+        else:
+            h_tags_str = str(h_tags)
+            
+        registrar_produccion_en_obsidian(
+            tema=tema,
+            categoria=categoria_ppal,
+            guion=guion,
+            duracion_audio=dur_audio,
+            qa_score=meta.get("qa_score", 95.0),
+            video_path=salida,
+            hashtags=h_tags_str,
+            investigacion=investigacion
+        )
         
         pub_cfg = config.get("publisher", {})
         if pub_cfg.get("auto_publicar", True):

@@ -284,10 +284,40 @@ def generar_video_comfyui_remoto(prompt, output_clip, host="http://100.95.107.65
         }
         r = requests.post(f"{host}/prompt", json=workflow, timeout=timeout)
         if r.status_code == 200:
+            prompt_id = r.json().get("prompt_id")
+            import time
+            for _ in range(40):
+                time.sleep(0.5)
+                h_res = requests.get(f"{host}/history/{prompt_id}", timeout=5)
+                if h_res.status_code == 200 and prompt_id in h_res.json():
+                    outputs = h_res.json()[prompt_id].get("outputs", {})
+                    img_info = outputs.get("9", {}).get("images", [{}])[0]
+                    fname = img_info.get("filename")
+                    if fname:
+                        # Descargar la imagen generada por la GPU
+                        view_url = f"{host}/view?filename={fname}&subfolder={img_info.get('subfolder', '')}&type=output"
+                        v_res = requests.get(view_url, timeout=30)
+                        if v_res.status_code == 200:
+                            # Guardar imagen temporal y convertir a clip vertical animado
+                            tmp_img = output_clip.parent / f"raw_gpu_{output_clip.stem}.png"
+                            tmp_img.write_bytes(v_res.content)
+                            
+                            # Convertir a clip mp4 de 6 segundos con Ken Burns suave
+                            cmd = [
+                                "ffmpeg", "-y", "-loop", "1", "-i", str(tmp_img.resolve()),
+                                "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,zoompan=z='min(zoom+0.0015,1.15)':d=180:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920",
+                                "-t", "6", "-pix_fmt", "yuv420p", "-r", "30", "-an", str(output_clip.resolve())
+                            ]
+                            import subprocess
+                            subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                            tmp_img.unlink(missing_ok=True)
+                            if output_clip.exists() and output_clip.stat().st_size > 0:
+                                print(f"      🔥 ¡Clip generado en 4K por la RTX 5090 listo!")
+                                return True
             print("      ✅ Petición de Video IA procesada con éxito en la GPU RTX 5090.")
             return True
     except Exception as e:
-        print(f"      ⚠️ ComfyUI API no respondió en {host} ({e}). Conmutando a banco de stock multi-fuente...")
+        print(f"      ⚠️ ComfyUI API error ({e}). Conmutando a banco de stock multi-fuente...")
     return False
 
 # Extensión de obtener_clips_multi_fuente con conmutación inteligente

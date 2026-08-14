@@ -25,6 +25,7 @@ from compositor import componer_smart_backdrop, generar_overlay_onda_audio
 from product_3d import componer_tarjeta_3d_glassmorphism, crear_clip_producto_3d_flotante
 from avatar_host import generar_avatar_en_rtx5090, crear_clip_intro_presentador
 from lip_sync import generar_clip_avatar_lipsync
+from vtuber_engine import renderizar_vtuber_animada
 import trends as trends_module
 
 FPS = 30
@@ -1008,12 +1009,14 @@ async def procesar_tema(tema, indice):
                     estilo_avatar = config.get("avatar_presentador", {}).get("estilo", "kawaii_waifu")
                     host_ok = generar_avatar_en_rtx5090(avatar_host_img, host=host_host, tema=tema, estilo=estilo_avatar)
                     if host_ok:
-                        # Animar con sincronización de voz y gesticulación del visor (3.5s)
-                        ok_intro = generar_clip_avatar_lipsync(avatar_host_img, work / "a_voz.mp3", intro_host_clip, duracion_max=3.5)
+                        # Animar con motor VTuber (boca real + gesticulación y respiración a 30 FPS)
+                        res_type = config.get("resolucion", "1080p").lower()
+                        tw, th = (2160, 3840) if res_type == "4k" else (1080, 1920)
+                        ok_intro = renderizar_vtuber_animada(avatar_host_img, work / "a_voz.mp3", intro_host_clip, width=tw, height=th, duracion_max=3.5, modo="full")
                         if not ok_intro:
-                            ok_intro = crear_clip_intro_presentador(avatar_host_img, intro_host_clip, duracion=3.5)
+                            ok_intro = generar_clip_avatar_lipsync(avatar_host_img, work / "a_voz.mp3", intro_host_clip, duracion_max=3.5)
                         if ok_intro and intro_host_clip.exists():
-                            print(f"      👤 Clip de Presentador Lip-Sync integrado al inicio.")
+                            print(f"      🌸 Clip de Presentadora VTuber Lip-Sync (30 FPS) integrado al inicio.")
                             videos.insert(0, str(intro_host_clip.resolve()))
                             
             fotos = paso_imagenes(prompts, work, n_fotos, tema=tema, investigacion=investigacion)

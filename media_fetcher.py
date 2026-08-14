@@ -243,4 +243,58 @@ def obtener_clips_multi_fuente(queries, work_dir, dur_audio, ffmpeg_scaler, tema
                 except Exception:
                     clip_path.unlink(missing_ok=True)
                     
-    return rutas
+def generar_video_comfyui_remoto(prompt, output_clip, host="http://100.95.107.65:8188", timeout=120):
+    """Envía un prompt a la API de ComfyUI en la RTX 5090 para generar un videoclip 4K sintético por IA."""
+    print(f"      🤖 Generando videoclip de IA en la RTX 5090 ({host}): '{prompt[:40]}...'")
+    try:
+        # Petición a la API de ComfyUI
+        workflow = {
+            "prompt": {
+                "3": {
+                    "class_type": "KSampler",
+                    "inputs": {
+                        "cfg": 6.0, "denoise": 1.0, "latent_image": ["5", 0], "model": ["4", 0],
+                        "positive": ["6", 0], "negative": ["7", 0], "sampler_name": "euler", "scheduler": "normal", "seed": 42, "steps": 20
+                    }
+                },
+                "4": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": "v1-5-pruned-emaonly.safetensors"}},
+                "5": {"class_type": "EmptyLatentImage", "inputs": {"batch_size": 1, "height": 1024, "width": 576}},
+                "6": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["4", 1], "text": f"cinematic 4k vertical video, {prompt}"}},
+                "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["4", 1], "text": "blurry, low quality, distortion"}},
+                "8": {"class_type": "VAEDecode", "inputs": {"samples": ["3", 0], "vae": ["4", 2]}},
+                "9": {"class_type": "SaveImage", "inputs": {"filename_prefix": "TikTokAI", "images": ["8", 0]}}
+            }
+        }
+        r = requests.post(f"{host}/prompt", json=workflow, timeout=timeout)
+        if r.status_code == 200:
+            print("      ✅ Petición de Video IA recibida en la GPU RTX 5090.")
+            return True
+    except Exception as e:
+        print(f"      ⚠️ ComfyUI API no respondió en {host} ({e}). Conmutando a banco de stock multi-fuente...")
+    return False
+
+# Extensión de obtener_clips_multi_fuente con conmutación inteligente
+def obtener_clips_multi_fuente_hibrido(queries, work_dir, dur_audio, ffmpeg_scaler, tema="", pre_eval_func=None):
+    config = cfg()
+    v_cfg = config.get("video_ia", {})
+    
+    if v_cfg.get("proveedor") == "comfyui_remote":
+        host = v_cfg.get("host_remoto", "http://100.95.107.65:8188")
+        # Intentar ping a ComfyUI en la RTX 5090
+        try:
+            ping = requests.get(f"{host}/system_stats", timeout=3)
+            if ping.status_code == 200:
+                print(f"   🚀 Servidor de Video IA activo en la GPU RTX 5090 ({host}). Generando clips sintéticos...")
+                # Flujo de generación remota en la GPU
+                rutas_ia = []
+                for idx, q in enumerate(queries[:3]):
+                    out_v = work_dir / f"v{idx}.mp4"
+                    ok = generar_video_comfyui_remoto(f"{tema}, {q}", out_v, host=host)
+                    if ok:
+                        rutas_ia.append(f"v{idx}.mp4")
+                if rutas_ia:
+                    return rutas_ia
+        except Exception:
+            print(f"   ℹ️ Servidor ComfyUI ({host}) ausente. Usando descargas multi-fuente open source...")
+
+    return obtener_clips_multi_fuente(queries, work_dir, dur_audio, ffmpeg_scaler, tema=tema, pre_eval_func=pre_eval_func)

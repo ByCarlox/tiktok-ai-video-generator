@@ -19,7 +19,7 @@ from metadata import generar_metadata, actualizar_obsidian_con_metadata
 from publisher import publicar_video
 from qa_review import revisar_video, MAX_REINTENTOS, evaluar_asset_imagen, evaluar_asset_video
 from investigacion import investigar_tema
-from media_fetcher import obtener_clips_multi_fuente
+from media_fetcher import obtener_clips_multi_fuente, obtener_clips_multi_fuente_hibrido
 import trends as trends_module
 
 FPS = 30
@@ -122,16 +122,14 @@ Devuelve SOLO un JSON válido: {{"queries": ["query1", "query2", "query3", "quer
     return fallback
 
 def descargar_video_clips(tema, work, dur_audio, guion="", investigacion=None):
-    """Busca y descarga clips de video vertical (9:16) en formato mp4 utilizando múltiples fuentes (Pixabay, Pexels, Wikimedia Commons)."""
-    print(f"   🎥 Buscando clips de video multi-fuente (concordancia >75%) para '{tema[:50]}...'")
+    print("   🎥 Obteniendo clips de video (IA ComfyUI / Multi-Fuente Open Source)...")
     config = cfg()
     res_type = config.get("resolucion", "1080p").lower()
     w, h = (2160, 3840) if res_type == "4k" else (1080, 1920)
     
-    # 1. Extraer queries desde la investigación estructurada o IA
-    if investigacion and "queries_video_stock" in investigacion and len(investigacion["queries_video_stock"]) > 0:
+    # 1. Usar queries estructurados de la investigación técnica si existen
+    if investigacion and "queries_video_stock" in investigacion:
         queries = investigacion["queries_video_stock"]
-        print(f"      🧠 Usando {len(queries)} términos de búsqueda derivados de la investigación técnica.")
     else:
         queries = generar_queries_video(tema, guion)
         
@@ -142,8 +140,8 @@ def descargar_video_clips(tema, work, dur_audio, guion="", investigacion=None):
             "-r", "30", "-an", str(output_clip.resolve())
         ], f"preparando clip {idx}", cwd=work)
 
-    # 2. Descargar usando multi-fuente (Pixabay + Pexels + Wikimedia Commons) con PRE-EVALUACIÓN por IA antes de reescalar
-    return obtener_clips_multi_fuente(queries, work, dur_audio, ffmpeg_scaler, tema=tema, pre_eval_func=evaluar_asset_video)
+    # 2. Obtener usando flujo híbrido (IA ComfyUI en RTX 5090 + Fallback Stock Multi-Fuente)
+    return obtener_clips_multi_fuente_hibrido(queries, work, dur_audio, ffmpeg_scaler, tema=tema, pre_eval_func=evaluar_asset_video)
 
 def draw_transparent_subtitle(text, output_path, width=1080, height=1920, font_path=None, font_size=60):
     img = Image.new("RGBA", (width, height), (0, 0, 0, 0))

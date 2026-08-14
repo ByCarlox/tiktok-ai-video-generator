@@ -31,10 +31,14 @@ ia:
   host_remoto: "http://100.95.107.65:11434"
   modelo: "qwen3.6:35b"         # Modelo 36B masivo de alta capacidad en la GPU RTX 5090
 
-# IA para imágenes (elige una)
+# IA para imágenes y video (elige proveedor)
 imagenes:
   proveedor: "pollinations"      # pollinations (gratis) | stability | replicate
-  # api_key: "tu-key"
+
+video_ia:
+  proveedor: "comfyui_remote"    # comfyui_remote (RTX 5090 vía Tailscale) | stock_multi_fuente (fallback)
+  host_remoto: "http://100.95.107.65:8188"
+  modelo: "ltx_video"            # ltx_video | hunyuan_video | cogvideox
 
 obsidian_vault: "TikTok-AI-Passive"
 salida_videos: "output/videos"

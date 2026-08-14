@@ -1,20 +1,20 @@
-# 🎬 TikTok & Shorts AI Autonomous Studio (v7.0 Ultimate Suite)
+# 🎬 TikTok & Shorts AI Autonomous Studio (v8.0 Flagship Suite)
 
-Un estudio autónomo multiplataforma de producción audiovisual diseñado para crear videos virales en formato vertical **9:16 (4K Ultra HD y 1080p)** para **TikTok, YouTube Shorts e Instagram Reels**.
+Un estudio autónomo de producción audiovisual diseñado para crear videos virales en formato vertical **9:16 (4K Ultra HD y 1080p)** para **TikTok, YouTube Shorts e Instagram Reels**.
 
-Cuenta con una **arquitectura distribuida** que delega el cómputo masivo de IA a servidores GPU dedicados (**NVIDIA RTX 5090 / 32 GB VRAM**) vía VPN privada (Tailscale), con **presentador virtual con sincronización labial (Lip-Sync)**, **recorte y tarjetas 3D Glassmorphism para productos reales**, **formas de onda reactivas** y **render 4K a 40 Mbps**.
+Cuenta con una **arquitectura distribuida** que delega el cómputo masivo de IA a servidores GPU dedicados (**NVIDIA RTX 5090 / 32 GB VRAM**) vía VPN privada (Tailscale), con **presentadora virtual Kawaii VTuber animada por IA**, **motor de video SOTA Wan 2.1 (Alibaba 14B DiT)**, **Cerebro Central Autónomo en Obsidian con memoria anti-duplicación**, **tarjetas 3D Glassmorphism** y **renderizado 4K a 40 Mbps**.
 
 ---
 
 ## 📑 Tabla de Contenidos
 - [✨ Comparativa de Ediciones (PRO vs Lite)](#-comparativa-de-ediciones-pro-vs-lite)
-- [🌟 Características de la Suite Broadcast v7.0](#-características-de-la-suite-broadcast-v70)
+- [🌸 Características Principales v8.0](#-características-principales-v80)
+- [🧠 Cerebro Central y Memoria en Obsidian](#-cerebro-central-y-memoria-en-obsidian)
 - [⚡ Inicio Rápido: Edición Lite (Bajos Recursos)](#-inicio-rápido-edición-lite-bajos-recursos)
 - [🚀 Inicio Rápido: Edición Broadcast Studio PRO (RTX 5090)](#-inicio-rápido-edición-broadcast-studio-pro-rtx-5090)
-- [🛠️ Tutorial: Conectar Servidor Remoto GPU (Tailscale VPN)](#️-tutorial-conectar-servidor-remoto-gpu-tailscale-vpn)
-- [📂 Estructura Modular del Proyecto](#-estructura-modular-del-proyecto)
-- [⚙️ Guía de Configuración Central](#️-guía-de-configuración-central)
-- [🔧 Solución de Problemas Comunes](#-solución-de-problemas-comunes)
+- [🛠️ Instalador Automático Wan 2.1 en la GPU (PowerShell)](#️-instalador-automático-wan-21-en-la-gpu-powershell)
+- [📂 Estructura del Repositorio](#-estructura-del-repositorio)
+- [⚙️ Guía de Configuración](#️-guía-de-configuración)
 
 ---
 
@@ -23,34 +23,61 @@ Cuenta con una **arquitectura distribuida** que delega el cómputo masivo de IA 
 | Característica | ⚡ Edición Lite (`pipeline_lite.py`) | 🚀 Edición Broadcast PRO (`pipeline.py`) |
 |---|---|---|
 | **Requisitos de Hardware** | Cualquier PC / Laptop con CPU (4GB+ RAM) | Laptop/PC + Servidor GPU (**RTX 5090 / 4090**) |
-| **Cerebro LLM** | Ollama local ligero (`qwen2.5:7b` / `llama3.2`) o NVIDIA NIM | **Qwen 3.6 35B** en GPU remota vía VPN |
-| **Presentador Virtual** | Desactivado (Rápido y ligero) | **Cyber Tech Host con Sincronización Labial (Lip-Sync)** |
-| **Fotos Reales de Producto** | ✅ Sí (Wikipedia / Wikimedia) | ✅ Sí (Wikipedia / Wikimedia en 4K) |
+| **Cerebro LLM** | Ollama local ligero (`qwen2.5:7b` / `llama3.2`) o NVIDIA NIM | **Qwen 3.6 35B** en GPU remota vía Tailscale |
+| **Presentadora Virtual** | Desactivado (Rápido y ligero) | **Nova (Kawaii VTuber) con animación por video IA & PIP continuo** |
+| **Motor de Video IA** | Stock B-Roll dinámico | **Wan 2.1 (Alibaba 14B DiT) / ComfyUI en RTX 5090** |
+| **Memoria Anti-Duplicación** | Básico | **Obsidian Neural Brain (Deduplicación semántica & Dataview)** |
+| **Fotos Reales de Producto** | ✅ Sí (Wikipedia / Wikimedia) | ✅ Sí (Wikipedia + Hero Assets 3D 8K) |
 | **Tarjetas 3D Glassmorphism** | Modo básico 2D | **Cristal esmerilado con aura neón y levitación 3D** |
-| **Motion Graphics** | Subtítulos virales MrBeast | **Onda de audio reactiva + Subtítulos con rebote cinético** |
+| **Motion Graphics** | Subtítulos virales MrBeast | **Onda de audio reactiva + Subtítulos sincronizados al milisegundo** |
 | **Resolución & Bitrate** | 1080p Full HD (Render rápido CPU) | **4K Ultra HD a 40 Mbps (CRF 13)** |
 | **Comando de Ejecución** | `python pipeline_lite.py` | `python pipeline.py` |
 
 ---
 
-## 🌟 Características de la Suite Broadcast v7.0
+## 🌸 Características Principales v8.0
 
-- 🗣️ **Presentador Virtual con Lip-Sync (`lip_sync.py`):** Analiza la energía RMS del audio para animar la gesticulación del presentador, las micro-inclinaciones de cabeza y el brillo holográfico de datos en el visor cibernético en perfecta sincronía con la voz.
-- 💎 **Tarjetas 3D Glassmorphism (`product_3d.py`):** Aísla productos reales (gadgets, microchips, naves, hardware) y los monta sobre paneles flotantes de cristal esmerilado con borde cian brillante y sombras de contacto 3D.
-- ⚡ **Ondas de Audio Reactivas (`compositor.py`):** Visualizador dinámico de 28 barras con gradiente Neón Cian / Amarillo Neón que late al compás de la voz y la música.
-- 📸 **Extractor de Fotos Reales de Producto (`product_fetcher.py`):** Descarga fotografías verídicas de alta resolución y notas de prensa oficiales desde Wikipedia y Wikimedia Commons.
-- 🖼️ **Compositor Anti-Stretch (`compositor.py`):** Encuadre inteligente para fotos 16:9, 4:3 o 1:1 con fondo desenfocado cinemático (`sigma=35`) y el producto al centro sin distorsión.
-- 📡 **Radar de 5 Pilares de Tendencias Globales (`trends.py`):** Rastreo continuo de noticias en tiempo real con algoritmo de *Virality Score (0-100)*.
-- 🔬 **Investigación Científica Previa (`investigacion.py`):** Compilación previa de datos duros cuantitativos en USD antes de generar guiones.
-- 💥 **Subtítulos Dinámicos MrBeast / Hormozi:** Palabras clave resaltadas en Amarillo Neón (`#FFE600`) y Cian con contorno 3D negro.
-- 🎙️ **Audio Broadcast Masterizado:** Voz neural `es-US-AlonsoNeural`, ecualización, compresor y efectos SFX (*Whoosh & Pop*).
-- 📓 **Gestión Editorial en Obsidian:** Programación automática de 3 episodios al día (Mañana, Tarde y Noche).
+- 🎀 **Presentadora Virtual Kawaii VTuber ("Nova"):** 
+  - **Identidad Fija:** Modelo oficial recortado con Chroma Key en [`assets/avatar/waifu_master_cutout.png`](assets/avatar/waifu_master_cutout.png).
+  - **Voz Neural:** `es-MX-DaliaNeural` (dulce, juvenil, enérgica y altamente expresiva).
+  - **Intro a Pantalla Completa (0 - 3.5s):** Apertura en set de estudio anime con partículas sakura.
+  - **Badge de Esquina PIP Animado Continuo:** Insignia circular con anillo de neón rosa `♥ AI WAIFU` que reproduce video dinámico con canal alfa durante todo el video.
+- 👑 **Motor de Video SOTA Wan 2.1 (Alibaba 14B DiT):** Integración nativa con ComfyUI en la RTX 5090 para sintetizar secuencias de video cinemáticas 9:16 a 24/30 FPS reales con física de cámara y movimiento 3D.
+- 💎 **Tarjetas 3D Glassmorphism (`product_3d.py`):** Recorte automático de gadgets, microchips, naves y hardware, montados sobre paneles flotantes de cristal esmerilado con aura cian y levitación senoidal (`v_product_3d.mp4`).
+- ⏱️ **Sincronización Labial y Subtítulos Milimétricos:** Línea de tiempo monótona estricta ($\sum \Delta t = \text{duración audio}$) que erradica por completo cualquier retraso o desfase acumulativo.
+- ⚡ **Ondas de Audio Reactivas (`compositor.py`):** Visualizador de audio neón que pulsa en tiempo real al ritmo de la voz.
+- 📸 **Extractor de Hero Assets y Fotos Reales (`product_fetcher.py`):** Consulta Wikipedia/Wikimedia o sintetiza Hero Assets 3D aislados en 8K si no existen fotos públicas.
+
+---
+
+## 🧠 Cerebro Central y Memoria en Obsidian
+
+El proyecto cuenta con un sistema de **Segundo Cerebro Autónomo** dentro de [`TikTok-AI-Passive/`](TikTok-AI-Passive):
+
+```text
+TikTok-AI-Passive/
+├── 00_Brain_Center/
+│   ├── 🧠_CENTRAL_DASHBOARD.md      # Panel interactivo con tablas dinámicas Dataview
+│   └── 🧬_PROYECTO_LORE.md          # Identidad, tono y lore de Nova (Kawaii VTuber)
+├── 01_Memory_Vault/
+│   ├── Topics_Memory/               # Índice JSON + Fichas de cada tema tratado
+│   ├── Winning_Hooks/               # Fórmulas de ganchos virales probadas
+│   └── Character_Profile/           # Reglas de animación, voz y visemas
+├── 02_Production_Logs/
+│   ├── Scripts_Archive/             # Notas automáticas de cada guión con metadatos YAML
+│   └── Published_Videos/            # Registro de videos listos para subir
+└── 04_Knowledge_Base/
+    └── Tech_Research/               # Papers científicos y fuentes investigadas
+```
+
+- **Filtro Anti-Duplicación:** Antes de generar guiones, [`trends.py`](trends.py) y [`pipeline.py`](pipeline.py) consultan el índice de Obsidian para descartar automáticamente temas repetidos o con similitud $> 45\%$.
+- **Notas de Producción Atómicas:** Cada video renderizado genera automáticamente una nota con enlaces bidireccionales `[[Tema]]`, hashtags, score de QA y métricas para Dataview.
 
 ---
 
 ## ⚡ Inicio Rápido: Edición Lite (Bajos Recursos)
 
-Para generar videos virales inmediatamente en cualquier ordenador sin configurar servidores ni VPNs:
+Para generar videos de inmediato en cualquier computadora sin necesidad de servidores ni GPU externa:
 
 ```bash
 # 1. Clonar el repositorio
@@ -68,76 +95,56 @@ python pipeline_lite.py
 
 ---
 
-## 🚀 Inicio Rápido: Edición Broadcast Studio PRO (Flagship)
+## 🚀 Inicio Rápido: Edición Broadcast Studio PRO (RTX 5090)
 
-Aprovecha el poder masivo de una **NVIDIA RTX 5090** para renderizar modelos de 35B y presentadores virtuales con calidad televisiva:
+Aprovecha el poder masivo de tu **NVIDIA RTX 5090** para renderizar videos con Wan 2.1, Qwen 35B y la presentadora virtual:
 
 ```bash
-# 1. Asegúrate de tener Tailscale conectado al servidor GPU
-# 2. Ejecutar la Suite Flagship
+# Ejecutar el pipeline completo
 python pipeline.py
 ```
 
 ---
 
-## 🛠️ Tutorial: Conectar Servidor Remoto GPU (Tailscale VPN)
+## 🛠️ Instalador Automático Wan 2.1 en la GPU (PowerShell)
 
-### En la PC Servidor (Windows con GPU NVIDIA RTX):
-1. **Instalar Tailscale:** Descargar [Tailscale para Windows](https://tailscale.com/download/windows) e iniciar sesión.
-2. **Iniciar Ollama en Red:**
-   ```cmd
-   setx OLLAMA_HOST "0.0.0.0:11434"
-   ollama serve
-   ollama pull qwen3.6:35b
-   ```
-3. **Iniciar ComfyUI Portable:**
-   - Descargar [ComfyUI Windows Portable NVIDIA](https://github.com/comfyanonymous/ComfyUI/releases/latest/download/ComfyUI_windows_portable_nvidia.7z).
-   - Colocar el checkpoint base `v1-5-pruned-emaonly.safetensors` en `ComfyUI/models/checkpoints/`.
-   - Editar `run_nvidia_gpu.bat` y asegurarse de incluir `--listen 0.0.0.0 --port 8188 --highvram`.
-4. **Habilitar Puertos en Firewall:**
-   ```powershell
-   netsh advfirewall firewall add rule name="Ollama 11434" dir=in action=allow protocol=TCP localport=11434
-   netsh advfirewall firewall add rule name="ComfyUI 8188" dir=in action=allow protocol=TCP localport=8188
-   ```
+En tu PC con la **RTX 5090**, abre **PowerShell** y ejecuta este comando de una sola línea para instalar **Wan 2.1 (14B)** en ComfyUI automáticamente:
 
-### En tu Máquina Cliente:
-Crea un archivo local `config.local.yaml` (ignorado por Git para proteger tu privacidad) con la IP de tu servidor:
-```yaml
-ia:
-  proveedor: "ollama_remote"
-  host_remoto: "http://100.95.107.65:11434"
-  modelo: "qwen3.6:35b"
-
-video_ia:
-  proveedor: "comfyui_remote"
-  host_remoto: "http://100.95.107.65:8188"
+```powershell
+irm https://raw.githubusercontent.com/ByCarlox/tiktok-ai-video-generator/main/install_wan21_rtx5090.ps1 | iex
 ```
+
+El script descargará e instalará automáticamente:
+- `ComfyUI-WanVideoWrapper`
+- Pesos oficiales `Wan2_1_T2V_14B_fp8_e4m3fn.safetensors`
+- `umt5_xxl_fp8_e4m3fn.safetensors` y `Wan2_1_VAE_bf16.safetensors`
 
 ---
 
-## 📂 Estructura Modular del Proyecto
+## 📂 Estructura del Repositorio
 
-```text
-├── pipeline.py          # Orquestador Flagship Broadcast Pro 4K (40 Mbps)
-├── pipeline_lite.py     # Orquestador Lite 1080p para PCs de bajos recursos
-├── product_3d.py        # Tarjetas 3D Glassmorphism y animación de levitación
-├── lip_sync.py          # Sincronización labial y visor reactivo del presentador
-├── product_fetcher.py   # Extractor de fotos reales en Wikipedia / Wikimedia
-├── compositor.py        # Compositor Anti-Stretch y ondas de audio reactivas
-├── avatar_host.py       # Generador de Cyber Host Faceless en RTX 5090
-├── trends.py            # Radar de 5 pilares RSS y algoritmo de Virality Score
-├── investigacion.py     # Ficha técnica estructurada previa a guion
-├── ia_client.py         # Cliente LLM con soporte de razonamiento (Qwen 35B)
-├── media_fetcher.py     # Motor híbrido de video (ComfyUI API + Stock Multi-Fuente)
-├── qa_review.py         # Inspector de control de calidad visual con IA de Visión
-├── metadata.py          # Generador de metadatos SEO y programador en Obsidian
-├── musica.py            # Selector inteligente de pistas de música libre
-├── config.yaml          # Configuración principal de la suite
-├── config.lite.yaml     # Configuración para edición ligera
-└── README.md            # Documentación completa de la suite v7.0
-```
+- [`pipeline.py`](pipeline.py): Orquestador maestro de la Suite Flagship Broadcast.
+- [`pipeline_lite.py`](pipeline_lite.py): Versión ligera y autónoma para PCs de bajos recursos.
+- [`avatar_host.py`](avatar_host.py): Motor de presentadora virtual y generador de badges de video PIP.
+- [`vtuber_engine.py`](vtuber_engine.py): Motor de animación 2D/3D con visemas anatómicos y físicas a 30 FPS.
+- [`obsidian_brain.py`](obsidian_brain.py): Cerebro de memoria persistente y motor anti-duplicación.
+- [`media_fetcher.py`](media_fetcher.py): Descarga y sintetizador de video Wan 2.1 en GPU remota.
+- [`product_3d.py`](product_3d.py): Generador de tarjetas 3D Glassmorphism y levitación senoidal.
+- [`product_fetcher.py`](product_fetcher.py): Extractor de fotos oficiales de Wikipedia y Hero Assets 3D.
+- [`qa_review.py`](qa_review.py): Agente de control de calidad autónomo.
+- [`compositor.py`](compositor.py): Motor anti-stretch y generador de ondas reactivas neón.
+- [`trends.py`](trends.py): Radar de tendencias y noticias con cálculo de Virality Score.
+- [`investigacion.py`](investigacion.py): Compilación de datos cuantitativos y contexto técnico.
+- [`config.yaml`](config.yaml): Configuración general del estudio.
+- [`config.local.yaml`](config.local.yaml): Configuración privada local (ignorado por Git).
 
 ---
 
-## 🛡️ Licencia
-Distribuido bajo licencia **MIT**. Diseñado para creadores de contenido, divulgadores de ciencia y desarrolladores de automatizaciones multimedia de alta calidad.
+## ⚙️ Guía de Configuración
+
+En [`config.yaml`](config.yaml) puedes personalizar:
+- **`voz`:** `es-MX-DaliaNeural` (VTuber Kawaii), `es-CO-SalomeNeural`, `es-US-AlonsoNeural`.
+- **`avatar_presentador`:** `activado: true`, `estilo: "kawaii_waifu"`.
+- **`video_ia`:** `modelo: "wan2.1"`, `resolucion_video: "720x1280"`.
+- **`resolucion`:** `"4k"` (2160x3840) o `"1080p"` (1080x1920).
+- **`numero_videos`:** Cantidad de videos a producir por corrida.

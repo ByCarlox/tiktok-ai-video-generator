@@ -4,9 +4,31 @@ import requests
 import yaml
 from pathlib import Path
 
+import re
+
 def cargar_config():
     with open("config.yaml", "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
+
+def limpiar_respuesta_llm(texto: str) -> str:
+    """Elimina etiquetas de razonamiento <think>...</think> de modelos como qwen3.6 / deepseek."""
+    if not texto:
+        return ""
+    return re.sub(r"<think>.*?</think>", "", texto, flags=re.DOTALL | re.IGNORECASE).strip()
+
+def extraer_json_valido(texto: str) -> dict:
+    """Extrae y parsea un diccionario JSON válido eliminando tags <think> y bloques markdown."""
+    texto = limpiar_respuesta_llm(texto)
+    if "```json" in texto:
+        texto = texto.split("```json")[1].split("```")[0].strip()
+    elif "```" in texto:
+        texto = texto.split("```")[1].split("```")[0].strip()
+    
+    ini = texto.find("{")
+    fin = texto.rfind("}")
+    if ini != -1 and fin != -1 and fin > ini:
+        texto = texto[ini:fin+1]
+    return json.loads(texto)
 
 PROMPT_GUION = """Eres un divulgador y guionista viral experto en tecnología, ciencia e inteligencia artificial para TikTok y Reels.
 Crea un guion impecable de {duracion} segundos sobre el tema: "{tema}".

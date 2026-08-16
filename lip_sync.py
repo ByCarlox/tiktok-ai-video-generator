@@ -6,6 +6,7 @@ Módulo para animar el Presentador Virtual Faceless (Cyber Tech Anchor) con sinc
 3. Generación de clip MP4 con sincronización exacta al archivo de voz.
 """
 import math
+import shutil
 import subprocess
 import numpy as np
 from pathlib import Path

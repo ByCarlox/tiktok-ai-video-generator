@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from pytrends.request import TrendReq
 import feedparser
+from obsidian_brain import verificar_duplicado
 
 def cargar_config():
     with open("config.yaml", "r", encoding="utf-8") as f:

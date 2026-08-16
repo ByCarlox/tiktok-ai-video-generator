@@ -7,6 +7,9 @@ Proveedor unificado de recursos multimedia libres / open source:
 4. Pollinations.ai (Generación de imágenes IA en 4K con modelo Flux)
 """
 import json
+import random
+import subprocess
+import time
 import urllib.parse
 import requests
 import yaml
@@ -29,6 +32,8 @@ def cfg():
         except Exception:
             pass
     return config
+
+cargar_config = cfg
 
 # ---------- BUSCADOR WIKIMEDIA COMMONS (OPEN SOURCE / PUBLIC DOMAIN) ----------
 def buscar_wikimedia_commons(query, limit=5, media_type="video"):
@@ -320,7 +325,6 @@ def generar_video_comfyui_remoto(prompt, output_clip, host="http://100.95.107.65
                                     raw_data = requests.get(view_url, timeout=30).content
                                     tmp_p = output_clip.parent / f"wan_raw_{output_clip.stem}.png"
                                     tmp_p.write_bytes(raw_data)
-                                    import subprocess
                                     subprocess.run(["ffmpeg", "-y", "-i", str(tmp_p.resolve()), "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30", str(output_clip.resolve())], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                                     tmp_p.unlink(missing_ok=True)
                                     if output_clip.exists() and output_clip.stat().st_size > 10000:
@@ -328,59 +332,7 @@ def generar_video_comfyui_remoto(prompt, output_clip, host="http://100.95.107.65
                                         return True
     except Exception as e:
         print(f"      ℹ️ Wan 2.1 B-Roll fallback: {e}")
-                                
-        if frames_descargados:
-            # Crear clip animado dinámico combinando los ángulos con movimiento y paneo de cámara
-            import subprocess
-            if len(frames_descargados) >= 2:
-                # Componer video dinámico de 5 segundos con corte y paneo cinematográfico
-                seg_a = output_clip.parent / f"tmp_a_{output_clip.stem}.mp4"
-                seg_b = output_clip.parent / f"tmp_b_{output_clip.stem}.mp4"
-                
-                # Ángulo 1: Paneo hacia la derecha con zoom
-                subprocess.run([
-                    "ffmpeg", "-y", "-loop", "1", "-i", str(frames_descargados[0].resolve()),
-                    "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,zoompan=z='min(zoom+0.002,1.20)':d=75:x='iw/2-(iw/zoom/2)+on*2':y='ih/2-(ih/zoom/2)':s=1080x1920",
-                    "-t", "2.5", "-pix_fmt", "yuv420p", "-r", "30", "-an", str(seg_a.resolve())
-                ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                
-                # Ángulo 2: Zoom out y paneo vertical
-                subprocess.run([
-                    "ffmpeg", "-y", "-loop", "1", "-i", str(frames_descargados[1].resolve()),
-                    "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,zoompan=z='if(lte(zoom,1.0),1.20,max(1.0,zoom-0.002))':d=75:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)-on*2':s=1080x1920",
-                    "-t", "2.5", "-pix_fmt", "yuv420p", "-r", "30", "-an", str(seg_b.resolve())
-                ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                
-                # Unir con transición cinematográfica
-                list_txt = output_clip.parent / f"list_gpu_{output_clip.stem}.txt"
-                with open(list_txt, "w", encoding="utf-8") as f:
-                    f.write(f"file '{seg_a.name}'\n")
-                    f.write(f"file '{seg_b.name}'\n")
-                subprocess.run([
-                    "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_txt.name,
-                    "-c", "copy", str(output_clip.resolve())
-                ], cwd=output_clip.parent, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                
-                # Limpiar temporales
-                seg_a.unlink(missing_ok=True)
-                seg_b.unlink(missing_ok=True)
-                list_txt.unlink(missing_ok=True)
-            else:
-                # Solo 1 frame: Paneo dinámico
-                subprocess.run([
-                    "ffmpeg", "-y", "-loop", "1", "-i", str(frames_descargados[0].resolve()),
-                    "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,zoompan=z='min(zoom+0.0025,1.22)':d=150:x='iw/2-(iw/zoom/2)+sin(on/10)*20':y='ih/2-(ih/zoom/2)+cos(on/10)*15':s=1080x1920",
-                    "-t", "5.0", "-pix_fmt", "yuv420p", "-r", "30", "-an", str(output_clip.resolve())
-                ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                
-            for f in frames_descargados:
-                f.unlink(missing_ok=True)
-                
-            if output_clip.exists() and output_clip.stat().st_size > 5000:
-                print(f"      🔥 ¡Secuencia cinematográfica multi-ángulo generada en la RTX 5090!")
-                return True
-    except Exception as e:
-        print(f"      ⚠️ ComfyUI GPU error ({e}). Conmutando a banco de stock...")
+        
     return False
 
 # Extensión de obtener_clips_multi_fuente con conmutación inteligente

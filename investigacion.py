@@ -4,6 +4,7 @@ Realiza una investigación técnica y estructurada sobre el tema antes de redact
 Garantiza precisión conceptual, hechos comprobables y metáforas visuales de alta concordancia (>75%).
 """
 import json
+import re
 import requests
 import yaml
 from pathlib import Path

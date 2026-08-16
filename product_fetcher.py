@@ -10,6 +10,7 @@ import re
 import json
 import time
 import requests
+from urllib.parse import quote
 from pathlib import Path
 from PIL import Image
 

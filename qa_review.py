@@ -6,10 +6,13 @@ y los compara contra el guion para garantizar coherencia visual y calidad.
 """
 import base64
 import json
+import re
+import sys
 import subprocess
 import requests
 import yaml
 from pathlib import Path
+from PIL import Image, ImageStat
 
 # Configuración del modelo de visión
 VISION_MODEL = "minicpm-v"

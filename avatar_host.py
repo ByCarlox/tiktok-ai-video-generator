@@ -5,9 +5,11 @@ Módulo para sintetizar y componer un Presentador Virtual Faceless (Cyber Tech H
 2. Composición de clip de Introducción (Intro Host: primeros 3.5 segundos con gancho).
 3. Composición de Badge Flotante (Corner Host PIP) con aura cian/neón.
 """
+import shutil
 import time
 import requests
 import subprocess
+from urllib.parse import quote
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter, ImageOps
 

@@ -4,10 +4,12 @@ import json
 import re
 import shutil
 import subprocess
+import traceback
 import yaml
 from datetime import datetime
 from hashlib import md5
 from pathlib import Path
+from urllib.parse import quote
 
 import edge_tts
 from faster_whisper import WhisperModel
@@ -23,9 +25,10 @@ from media_fetcher import obtener_clips_multi_fuente, obtener_clips_multi_fuente
 from product_fetcher import obtener_imagenes_producto_real
 from compositor import componer_smart_backdrop, generar_overlay_onda_audio
 from product_3d import componer_tarjeta_3d_glassmorphism, crear_clip_producto_3d_flotante
-from avatar_host import generar_avatar_en_rtx5090, crear_clip_intro_presentador
+from avatar_host import generar_avatar_en_rtx5090, crear_clip_intro_presentador, crear_video_pip_badge_animado
 from lip_sync import generar_clip_avatar_lipsync
 from vtuber_engine import renderizar_vtuber_animada
+from obsidian_brain import verificar_duplicado, registrar_produccion_en_obsidian
 import trends as trends_module
 
 FPS = 30

@@ -756,11 +756,7 @@ def paso_render_pillow(imagenes, videos, audio, srt_path, musica, salida, work):
         
     (work / "concat_subtitles.txt").write_text("".join(concat_lines), encoding="utf-8")
     
-    # 4. Generar Overlay de Onda de Audio Reactiva Neón
-    wave_png = work / "audio_waveform.png"
-    generar_overlay_onda_audio(0.85, wave_png, width=w, height=h)
-    
-    # 5. Generar Badge PIP de Presentador en Esquina (Video Animado o Estático)
+    # 4. Generar Badge PIP de Presentador en Esquina (Video Animado o Estático)
     avatar_img = work / "host_avatar.png"
     intro_host_clip = work / "v_intro_host.mp4"
     pip_vid = work / "v_avatar_pip.mov"
@@ -778,28 +774,27 @@ def paso_render_pillow(imagenes, videos, audio, srt_path, musica, salida, work):
             if ok_vid_pip and pip_vid.exists():
                 tiene_pip_vid = True
             
-    # 6. Mezclar fondo, onda reactiva, subtítulos overlay, PIP avatar y audio masterizado
+    # 5. Mezclar fondo, subtítulos overlay, PIP avatar y audio masterizado (sin barras de onda)
     max_mbps = config.get("compositor", {}).get("bitrate_max_mbps", 40)
     cmd = [
         "ffmpeg", "-y",
         "-i", "background.mp4",
-        "-loop", "1", "-i", "audio_waveform.png",
         "-f", "concat", "-safe", "0", "-i", "concat_subtitles.txt"
     ]
     
-    v_chain = "[0:v][1:v]overlay=0:0[v_wave];[v_wave][2:v]overlay=0:0"
+    v_chain = "[0:v][1:v]overlay=0:0"
     
     if tiene_pip_vid:
         cmd += ["-i", "v_avatar_pip.mov"]
-        v_chain += f"[v_sub];[v_sub][3:v]overlay=W-w-35:H-h-240:enable='gt(t,3.2)'[outv]"
-        audio_in_idx = 4
+        v_chain += f"[v_sub];[v_sub][2:v]overlay=W-w-35:H-h-240:enable='gt(t,3.2)'[outv]"
+        audio_in_idx = 3
     elif tiene_pip_png:
         cmd += ["-loop", "1", "-i", "avatar_pip_badge.png"]
-        v_chain += f"[v_sub];[v_sub][3:v]overlay=W-w-35:H-h-240:enable='gt(t,3.2)'[outv]"
-        audio_in_idx = 4
+        v_chain += f"[v_sub];[v_sub][2:v]overlay=W-w-35:H-h-240:enable='gt(t,3.2)'[outv]"
+        audio_in_idx = 3
     else:
         v_chain += "[outv]"
-        audio_in_idx = 3
+        audio_in_idx = 2
         
     cmd += ["-i", "a.mp3"]
     

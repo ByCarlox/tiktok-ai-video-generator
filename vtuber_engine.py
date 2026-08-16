@@ -183,32 +183,38 @@ def renderizar_vtuber_animada(
             t = f_idx / fps
             amp = amplitudes[f_idx]
             
-            # 1. Selección de Visema de Boca según amplitud de audio
-            if amp < 0.07:
+            # 1. Selección de Visema y Articulación de Boca
+            if amp < 0.08:
                 visema = "closed"
             elif amp < 0.28:
                 visema = "small"
             elif amp < 0.60:
                 visema = "medium"
             else:
-                # Alternar entre wide y round para variedad
                 visema = "wide" if (f_idx % 4 < 2) else "round"
                 
             cur_sprite = viseme_imgs[visema].copy()
             
-            # 2. Movimiento Corporal Armónico (Respiración + Swaying + Bobbing de habla)
-            # Respiración senoidal suave
+            # 2. Parpadeo Natural de Ojos (Blinking cada 2.8 segundos)
+            blink_cycle = (t % 2.8)
+            if 1.1 <= blink_cycle <= 1.25:
+                d_b = ImageDraw.Draw(cur_sprite)
+                skin_color = (250, 225, 215, 255)
+                # Ojo izquierdo
+                d_b.chord([315, 355, 375, 405], 0, 180, fill=skin_color, outline=(70, 40, 50, 240), width=3)
+                # Ojo derecho
+                d_b.chord([415, 355, 475, 405], 0, 180, fill=skin_color, outline=(70, 40, 50, 240), width=3)
+            
+            # 3. Movimiento Corporal Armónico (Respiración + Swaying + Bobbing de habla)
             breath_y = math.sin(t * 2.5) * 6
-            # Inclinación sutil de cabeza
             tilt_deg = math.sin(t * 1.8) * 1.8 + (math.cos(t * 3.2) * 1.2 if amp > 0.2 else 0)
-            # Bobbing de habla
             speech_bob = math.sin(t * 8.0) * (amp * 5.0)
             
             total_offset_y = int(breath_y + speech_bob)
             total_offset_x = int(math.cos(t * 1.2) * 3.0)
             
             # Rotar personaje sutilmente
-            cur_sprite = cur_sprite.rotate(tilt_deg, resample=Image.Resampling.BILINEAR, center=(orig_w // 2, int(orig_h * 0.4)))
+            cur_sprite = cur_sprite.rotate(tilt_deg, resample=Image.Resampling.BICUBIC, center=(orig_w // 2, int(orig_h * 0.4)))
             
             if modo == "full":
                 frame_canvas = bg_stage.copy()
@@ -218,21 +224,19 @@ def renderizar_vtuber_animada(
                 
                 pos_x = (width - nw) // 2 + total_offset_x
                 pos_y = height - nh - int(height * 0.03) + total_offset_y
-                
                 frame_canvas.paste(char_resized, (pos_x, pos_y), char_resized)
                 
-                # Partículas sakura suaves flotantes
-                draw_p = ImageDraw.Draw(frame_canvas)
-                for p_i in range(8):
-                    px = int((width * 0.15 + (p_i * 120 + t * 45)) % width)
-                    py = int((height * 0.20 + (p_i * 90 + t * 60)) % (height * 0.8))
-                    draw_p.ellipse([px, py, px + 8, py + 8], fill=(255, 180, 210, 140))
+                # Partículas sakura flotantes sutiles
+                draw_part = ImageDraw.Draw(frame_canvas)
+                for p_i in range(5):
+                    px = int((width * 0.2 + (p_i * 180 + t * 45) % (width * 0.8)))
+                    py = int((height * 0.15 + (p_i * 240 + t * 65) % (height * 0.7)))
+                    draw_part.ellipse([px, py, px + 6, py + 4], fill=(255, 185, 210, 160))
                     
-                frame_file = frames_dir / f"f_{f_idx:04d}.jpg"
-                frame_canvas.convert("RGB").save(frame_file, "JPEG", quality=92)
+                frame_canvas.convert("RGB").save(frames_dir / f"f_{f_idx:04d}.jpg", "JPEG", quality=95)
                 
             elif modo == "pip":
-                # Modo PIP circular en esquina (Badge de 280x280)
+                # Modo PIP circular en esquina (Badge de 280x280 animado)
                 badge_size = 280
                 crop_size = min(orig_w, int(orig_h * 0.48))
                 left = (orig_w - crop_size) // 2

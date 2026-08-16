@@ -44,29 +44,28 @@ def extraer_json_valido(texto: str) -> dict:
         texto = texto[ini:fin+1]
     return json.loads(texto)
 
-PROMPT_GUION = """Eres un divulgador y guionista viral experto en tecnología, ciencia e inteligencia artificial para TikTok y Reels.
-Crea un guion impecable de {duracion} segundos sobre el tema: "{tema}".
+PROMPT_GUION = """Eres el mejor guionista de TikTok y YouTube Shorts de tecnología y ciencia del mundo.
+Crea un guion viral de alto impacto de {duracion} segundos sobre: "{tema}".
 
-DATOS DE INVESTIGACIÓN TÉCNICA ESTRUCTURADA:
-- Resumen Técnico: {resumen_tecnico}
-- Hechos Científicos Clave: {hechos_clave}
-- Términos Clave: {terminologia}
-- Enfoque Narrativo: {angulo}
+DATOS TÉCNICOS INVESTIGADOS:
+- Resumen: {resumen_tecnico}
+- Datos Cuantitativos y Hechos Clave: {hechos_clave}
+- Conceptos Clave: {terminologia}
+- Enfoque Viral: {angulo}
 
-REGLAS NARRATIVAS DE ALTA CONVERSIÓN:
-- Gancho disruptivo en las primeras 5 palabras (debe congelar el scroll al instante).
-- Historia dividida en 3 actos fluidos: Gancho -> 2 a 3 datos impactantes en USD/cifras -> Cierre de alto valor + CTA sutil.
-- Puntuación PERFECTA: Usa puntos y comas de forma estratégica para dictar el ritmo y las pausas naturales de la voz.
-- Lenguaje fascinante, claro y 100% riguroso. Cada oración debe estar completa y terminar en punto.
+FÓRMULA ESTRICTA DE RETENCIÓN VIRAL (ESTILO MRBEAST / HORMOZI):
+1. GANCHO INICIAL (Primeras 5 palabras): Comienza directamente con una revelación o pregunta electrizante. Queda prohibido saludar o decir "hola".
+2. DESARROLLO DINÁMICO (2 a 3 oraciones): Explica el avance con datos duros, cifras en dólares USD y qué significa para el futuro. Usa oraciones cortas y directas (máximo 14 palabras por oración).
+3. REMATE Y LLAMADO A LA ACCIÓN (Última oración): Cierre memorable con una reflexión intrigante y una invitación rápida a seguir el canal.
 
-REGLAS DE IDIOMA Y AUDIENCIA:
-- Español NEUTRO panlatino (sin modismos ni regionalismos).
-- Todas las cifras o referencias económicas deben estar expresadas en dólares estadounidenses (USD).
+REGLAS DE VOCALIZACIÓN Y PUNTUACIÓN:
+- Usa puntos (.) y comas (,) con precisión matemática para dictar pausas naturales a la voz de la presentadora.
+- Español neutro latinoamericano sin modismos locales.
+- Todas las cifras expresadas en dólares USD.
 
-REGLAS DE FORMATO LIMPIO:
-- Devuelve exclusivamente el texto final que será narrado en voz alta.
-- PROHIBIDO incluir encabezados, etiquetas ("HOOK:", "NARRADOR:"), paréntesis, corchetes o símbolos markdown (#, *, _).
-- PROHIBIDO dejar oraciones inconclusas o cortar el texto a la mitad."""
+FORMATO FINAL OBLIGATORIO:
+- Devuelve ÚNICAMENTE el texto que leerá la narradora.
+- PROHIBIDO incluir encabezados, etiquetas ("GANCHO:", "NARRADOR:"), acotaciones, paréntesis o símbolos de formato (#, *)."""
 
 PROMPT_IMAGENES = """Genera 4 prompts en inglés para imágenes verticales 9:16 sobre este tema de TikTok: "{tema}".
 

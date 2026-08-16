@@ -472,9 +472,13 @@ async def paso_voz(texto, audio, voz):
 
 # ---------- 4. SUBTÍTULOS ----------
 def paso_subtitulos(audio, srt):
-    print("   📝 Generando subtítulos rápidos estilo TikTok...")
-    model = WhisperModel("base", device="cpu", compute_type="int8")
-    segments, _ = model.transcribe(str(audio), language="es", vad_filter=True, word_timestamps=True)
+    print("   📝 Generando subtítulos rápidos estilo TikTok con alta precisión...")
+    try:
+        model = WhisperModel("small", device="cpu", compute_type="int8")
+        segments, _ = model.transcribe(str(audio), language="es", vad_filter=True, word_timestamps=True, beam_size=5)
+    except Exception:
+        model = WhisperModel("base", device="cpu", compute_type="int8")
+        segments, _ = model.transcribe(str(audio), language="es", vad_filter=True, word_timestamps=True)
     
     words_list = []
     for seg in segments:
@@ -764,15 +768,15 @@ def paso_render_pillow(imagenes, videos, audio, srt_path, musica, salida, work):
     tiene_pip_vid = False
     tiene_pip_png = False
     
-    if intro_host_clip.exists():
-        from avatar_host import crear_video_pip_badge_animado
-        ok_vid_pip = crear_video_pip_badge_animado(intro_host_clip, pip_vid, duracion_total=dur_audio, size=int(w * 0.22))
+    if avatar_img.exists():
+        ok_vid_pip = renderizar_vtuber_animada(avatar_img, work / "a_voz.mp3", pip_vid, width=w, height=h, duracion_max=dur_audio, modo="pip")
         if ok_vid_pip and pip_vid.exists():
             tiene_pip_vid = True
-            
-    if not tiene_pip_vid and avatar_img.exists():
-        # Fallback a PNG
-        pass
+        elif intro_host_clip.exists():
+            from avatar_host import crear_video_pip_badge_animado
+            ok_vid_pip = crear_video_pip_badge_animado(intro_host_clip, pip_vid, duracion_total=dur_audio, size=int(w * 0.22))
+            if ok_vid_pip and pip_vid.exists():
+                tiene_pip_vid = True
             
     # 6. Mezclar fondo, onda reactiva, subtítulos overlay, PIP avatar y audio masterizado
     max_mbps = config.get("compositor", {}).get("bitrate_max_mbps", 40)
@@ -1027,12 +1031,14 @@ async def procesar_tema(tema, indice):
                     estilo_avatar = config.get("avatar_presentador", {}).get("estilo", "kawaii_waifu")
                     host_ok = generar_avatar_en_rtx5090(avatar_host_img, host=host_host, tema=tema, estilo=estilo_avatar)
                     if host_ok:
-                        # Animar con motor neuronal (LivePortrait / Wan 2.1 I2V en RTX 5090)
+                        # Animar con motor VTuber facial orgánico a 30 FPS
                         res_type = config.get("resolucion", "1080p").lower()
                         tw, th = (2160, 3840) if res_type == "4k" else (1080, 1920)
-                        ok_intro = crear_clip_intro_presentador(avatar_host_img, intro_host_clip, duracion=3.5, width=tw, height=th, audio_path=work / "a_voz.mp3", host=host_host)
+                        ok_intro = renderizar_vtuber_animada(avatar_host_img, work / "a_voz.mp3", intro_host_clip, width=tw, height=th, duracion_max=3.5, modo="full")
+                        if not ok_intro:
+                            ok_intro = crear_clip_intro_presentador(avatar_host_img, intro_host_clip, duracion=3.5, width=tw, height=th, audio_path=work / "a_voz.mp3", host=host_host)
                         if ok_intro and intro_host_clip.exists():
-                            print(f"      🌸 Clip de Presentadora (Animación Cinematográfica 3D) integrado al inicio.")
+                            print(f"      🌸 Clip de Presentadora (Animación Facial Orgánica a 30 FPS) integrado al inicio.")
                             videos.insert(0, str(intro_host_clip.resolve()))
                             
             fotos = paso_imagenes(prompts, work, n_fotos, tema=tema, investigacion=investigacion)

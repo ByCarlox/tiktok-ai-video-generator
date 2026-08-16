@@ -7,5 +7,14 @@
     "qa_score": 90.0,
     "duracion": 23.8,
     "video_file": "20260816_1351_anthropic-shares-more-details-about-how-claudes-ne.mp4"
+  },
+  "20260816_1442_si_eres_programador_esta_nueva_ia_d": {
+    "tema": "Si eres programador, esta nueva IA de Microsoft es más rápida y barata que Claude Code",
+    "category": "tecnologia",
+    "date_last": "2026-08-16 14:42:33",
+    "times_covered": 1,
+    "qa_score": 90.0,
+    "duracion": 25.1,
+    "video_file": "20260816_1440_si-eres-programador-esta-nueva-ia-de-microsoft-es-.mp4"
   }
 }

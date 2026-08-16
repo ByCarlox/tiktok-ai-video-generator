@@ -272,78 +272,62 @@ def obtener_checkpoint_disponible(host):
     return None
 
 def generar_video_comfyui_remoto(prompt, output_clip, host="http://100.95.107.65:8188", timeout=600):
-    """Envía un prompt a la API de ComfyUI en la RTX 5090 para generar un videoclip cinemático de máxima calidad con Wan 2.1 / DiT."""
+    """Envía un prompt a la API de ComfyUI en la RTX 5090 para generar un videoclip cinemático de máxima calidad con Wan 2.1 14B."""
+    output_clip = Path(output_clip)
+    output_clip.parent.mkdir(parents=True, exist_ok=True)
+    
     config = cargar_config()
     cfg_vid = config.get("video_ia", {})
-    steps_val = cfg_vid.get("sampling_steps", 35)
+    steps_val = cfg_vid.get("sampling_steps", 25)
     timeout_val = cfg_vid.get("timeout_segundos", timeout)
     
-    ckpt_name = obtener_checkpoint_disponible(host)
-    
-    # 1. Detectar si ComfyUI tiene instalado el nodo Wan 2.1 (Alibaba SOTA)
     try:
-        r_info = requests.get(f"{host}/object_info", timeout=5)
+        r_info = requests.get(f"{host}/object_info/UNETLoader", timeout=4)
         if r_info.status_code == 200:
-            nodes = r_info.json()
-            if "WanVideoModelLoader" in nodes or "WanVideoSampler" in nodes or "Wan21_Text2Video" in nodes:
-                print(f"      🎬 [WAN 2.1 SOTA 14B] Sintetizando videoclip cinemático de máxima calidad ({steps_val} pasos) en la RTX 5090...")
-    except Exception:
-        pass
-
-    if not ckpt_name:
-        print(f"      ℹ️ ComfyUI activo, pero la carpeta 'ComfyUI/models/checkpoints' está vacía en la GPU. Usando banco de stock 4K...")
-        return False
-        
-    print(f"      🤖 Generando secuencia cinemática HD en la RTX 5090 ({ckpt_name} - {steps_val} pasos): '{prompt[:35]}...'")
-    try:
-        # Prompt A: Macro Shot ultra detallado
-        # Prompt B: Wide Cinematic Orbit Shot
-        prompts_gpu = [
-            f"extreme macro cinematic closeup of {prompt}, masterfully composed, raytracing lighting, intricate micro-details, 8k, photorealistic masterpiece",
-            f"hero reveal wide angle orbital view of {prompt}, volumetric atmospheric lighting, dark high tech environment, 8k resolution, octane render"
-        ]
-        
-        frames_descargados = []
-        import random
-        for p_idx, p_text in enumerate(prompts_gpu):
-            seed_val = random.randint(1000, 999999)
-            workflow = {
-                "prompt": {
-                    "3": {
-                        "class_type": "KSampler",
-                        "inputs": {
-                            "cfg": 6.0, "denoise": 1.0, "latent_image": ["5", 0], "model": ["4", 0],
-                            "positive": ["6", 0], "negative": ["7", 0], "sampler_name": "euler", "scheduler": "normal", "seed": seed_val, "steps": steps_val
-                        }
-                    },
-                    "4": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": ckpt_name}},
-                    "5": {"class_type": "EmptyLatentImage", "inputs": {"batch_size": 1, "height": 1024, "width": 576}},
-                    "6": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["4", 1], "text": f"cinematic 8k vertical video, {p_text}"}},
-                    "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["4", 1], "text": "blurry, low quality, distortion, ugly, cartoon, text, watermark"}},
-                    "8": {"class_type": "VAEDecode", "inputs": {"samples": ["3", 0], "vae": ["4", 2]}},
-                    "9": {"class_type": "SaveImage", "inputs": {"filename_prefix": f"GPU_Clip_{p_idx}", "images": ["8", 0]}}
+            unets = r_info.json().get("UNETLoader", {}).get("input", {}).get("required", {}).get("unet_name", [[]])[0]
+            wan_model = next((u for u in unets if "wan" in u.lower()), None)
+            
+            if wan_model:
+                print(f"      🎬 [WAN 2.1 14B SOTA] Sintetizando videoclip B-Roll HD ({wan_model} - {steps_val} pasos) en la RTX 5090...")
+                workflow_wan = {
+                    "prompt": {
+                        "1": {"class_type": "UNETLoader", "inputs": {"unet_name": wan_model, "weight_dtype": "fp8_e4m3fn"}},
+                        "2": {"class_type": "CLIPLoader", "inputs": {"clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors", "type": "wan"}},
+                        "3": {"class_type": "VAELoader", "inputs": {"vae_name": "wan_2.1_vae.safetensors"}},
+                        "4": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": f"cinematic 8k vertical video, high technology, {prompt}, masterfully composed, raytracing lighting, 8k resolution, octane render, smooth fluid motion"}},
+                        "5": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": "blurry, low quality, distortion, ugly, text, watermark"}},
+                        "6": {"class_type": "WanImageToVideo", "inputs": {"positive": ["4", 0], "negative": ["5", 0], "vae": ["3", 0], "width": 480, "height": 832, "length": 49, "batch_size": 1}},
+                        "7": {"class_type": "KSampler", "inputs": {"model": ["1", 0], "positive": ["6", 0], "negative": ["6", 1], "latent_image": ["6", 2], "seed": 5555, "steps": steps_val, "cfg": 6.0, "sampler_name": "euler", "scheduler": "normal", "denoise": 1.0}},
+                        "8": {"class_type": "VAEDecode", "inputs": {"samples": ["7", 0], "vae": ["3", 0]}},
+                        "9": {"class_type": "SaveAnimatedPNG", "inputs": {"images": ["8", 0], "fps": 24.0, "compress_level": 4, "filename_prefix": "WanBRoll"}}
+                    }
                 }
-            }
-            r = requests.post(f"{host}/prompt", json=workflow, timeout=20)
-            if r.status_code == 200:
-                prompt_id = r.json().get("prompt_id")
-                import time
-                max_polls = max(40, int(timeout_val / 2.0))
-                for _ in range(max_polls):
-                    time.sleep(1.5)
-                    h_res = requests.get(f"{host}/history/{prompt_id}", timeout=8)
-                    if h_res.status_code == 200 and prompt_id in h_res.json():
-                        outputs = h_res.json()[prompt_id].get("outputs", {})
-                        img_info = outputs.get("9", {}).get("images", [{}])[0]
-                        fname = img_info.get("filename")
-                        if fname:
-                            view_url = f"{host}/view?filename={fname}&subfolder={img_info.get('subfolder', '')}&type=output"
-                            v_res = requests.get(view_url, timeout=40)
-                            if v_res.status_code == 200:
-                                tmp_frame = output_clip.parent / f"gpu_raw_{output_clip.stem}_{p_idx}.png"
-                                tmp_frame.write_bytes(v_res.content)
-                                frames_descargados.append(tmp_frame)
-                                break
+                
+                r_post = requests.post(f"{host}/prompt", json=workflow_wan, timeout=10)
+                if r_post.status_code == 200:
+                    p_id = r_post.json().get("prompt_id")
+                    import time
+                    for _ in range(int(timeout_val / 4)):
+                        time.sleep(4)
+                        h_res = requests.get(f"{host}/history/{p_id}", timeout=6)
+                        if h_res.status_code == 200 and p_id in h_res.json():
+                            outputs = h_res.json()[p_id].get("outputs", {})
+                            for n_out in outputs.values():
+                                imgs = n_out.get("images", [])
+                                if imgs:
+                                    f_info = imgs[0]
+                                    view_url = f"{host}/view?filename={f_info['filename']}&subfolder={f_info.get('subfolder','')}&type={f_info.get('type','output')}"
+                                    raw_data = requests.get(view_url, timeout=30).content
+                                    tmp_p = output_clip.parent / f"wan_raw_{output_clip.stem}.png"
+                                    tmp_p.write_bytes(raw_data)
+                                    import subprocess
+                                    subprocess.run(["ffmpeg", "-y", "-i", str(tmp_p.resolve()), "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30", str(output_clip.resolve())], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                                    tmp_p.unlink(missing_ok=True)
+                                    if output_clip.exists() and output_clip.stat().st_size > 10000:
+                                        print(f"      ✅ [WAN 2.1 14B] Clip B-Roll generado exitosamente en RTX 5090 ({output_clip.stat().st_size // 1024} KB).")
+                                        return True
+    except Exception as e:
+        print(f"      ℹ️ Wan 2.1 B-Roll fallback: {e}")
                                 
         if frames_descargados:
             # Crear clip animado dinámico combinando los ángulos con movimiento y paneo de cámara

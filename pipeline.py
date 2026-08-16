@@ -1009,49 +1009,60 @@ async def procesar_tema(tema, indice):
             if intento > 1:
                 print(f"\n   🔄 REINTENTO {intento}/{MAX_REINTENTOS + 1} — Regenerando contenido visual...")
             
-            # 6 imágenes y clips de video
-            print(f"   [6/10] Imágenes y Clips de Video Multi-Fuente {'(regenerando)' if intento > 1 else ''}...")
-            n_fotos = min(7, max(4, dur_max // 5))
-            prompts = generar_prompts_para_guion(guion, n_fotos, investigacion=investigacion)
-            videos = descargar_video_clips(tema, work, dur_audio, guion=guion, investigacion=investigacion)
-            if not isinstance(videos, list):
-                videos = []
+            # 6. Storyboard Cinemático Estructurado (Director Mode - Cero Desperdicio)
+            print(f"   [6/10] Storyboard Cinemático Estructurado (Director Mode {'(regenerando)' if intento > 1 else ''})...")
+            res_type = config.get("resolucion", "1080p").lower()
+            tw, th = (2160, 3840) if res_type == "4k" else (1080, 1920)
+            host_host = config.get("avatar_presentador", {}).get("host", "http://100.95.107.65:8188")
+            estilo_avatar = config.get("avatar_presentador", {}).get("estilo", "kawaii_waifu")
             
-            # Integrar clip del Presentador Virtual Faceless animado con Lip-Sync
-            if config.get("avatar_presentador", {}).get("activado", True):
-                avatar_host_img = work / "host_avatar.png"
-                intro_host_clip = work / "v_intro_host.mp4"
-                if not intro_host_clip.exists():
-                    host_host = config.get("avatar_presentador", {}).get("host", "http://100.95.107.65:8188")
-                    estilo_avatar = config.get("avatar_presentador", {}).get("estilo", "kawaii_waifu")
-                    host_ok = generar_avatar_en_rtx5090(avatar_host_img, host=host_host, tema=tema, estilo=estilo_avatar)
-                    if host_ok:
-                        # Animar con Motion Vault o motor neuronal/VTuber a 30 FPS
-                        res_type = config.get("resolucion", "1080p").lower()
-                        tw, th = (2160, 3840) if res_type == "4k" else (1080, 1920)
-                        ok_intro = crear_clip_intro_presentador(avatar_host_img, intro_host_clip, duracion=3.5, width=tw, height=th, audio_path=work / "a_voz.mp3", host=host_host, tema=tema, guion=guion)
-                        if not ok_intro:
-                            ok_intro = renderizar_vtuber_animada(avatar_host_img, work / "a_voz.mp3", intro_host_clip, width=tw, height=th, duracion_max=3.5, modo="full")
-                        if ok_intro and intro_host_clip.exists():
-                            print(f"      🌸 Clip de Presentadora (Animación Orgánica Motion Vault) integrado al inicio.")
-                            videos.insert(0, str(intro_host_clip.resolve()))
-                            
-            fotos = paso_imagenes(prompts, work, n_fotos, tema=tema, investigacion=investigacion)
-            imagenes = ["i0.jpg"] + fotos
+            storyboard_videos = []
             
-            # Integrar clip 3D de levitación para la tarjeta de producto real
-            if (work / "i1.jpg").exists():
-                clip_prod_3d = work / "v_product_3d.mp4"
-                if not clip_prod_3d.exists():
-                    res_type = config.get("resolucion", "1080p").lower()
-                    tw, th = (2160, 3840) if res_type == "4k" else (1080, 1920)
-                    ok_p3d = crear_clip_producto_3d_flotante(work / "i1.jpg", clip_prod_3d, duracion=4.0, width=tw, height=th)
-                    if ok_p3d and clip_prod_3d.exists():
-                        print(f"      💎 Clip de Producto 3D Flotante integrado a la línea de tiempo.")
-                        if len(videos) >= 1:
-                            videos.insert(1, str(clip_prod_3d.resolve()))
-                        else:
-                            videos.append(str(clip_prod_3d.resolve()))
+            # --- ACTO 1 (0.0s - 3.5s): Hook con Presentadora Wan 2.1 14B / Motion Vault ---
+            print("      🎬 [Acto 1/4] Preparando Intro de Presentadora (Wan 2.1 / Motion Vault)...")
+            avatar_host_img = work / "host_avatar.png"
+            intro_host_clip = work / "v_intro_host.mp4"
+            host_ok = generar_avatar_en_rtx5090(avatar_host_img, host=host_host, tema=tema, estilo=estilo_avatar)
+            if host_ok:
+                ok_intro = crear_clip_intro_presentador(avatar_host_img, intro_host_clip, duracion=3.5, width=tw, height=th, audio_path=work / "a_voz.mp3", host=host_host, tema=tema, guion=guion)
+                if ok_intro and intro_host_clip.exists():
+                    storyboard_videos.append(str(intro_host_clip.resolve()))
+                    
+            # --- ACTO 2 (3.5s - 8.5s): Hero Product 3D Glassmorphic (Generación Quirúrgica 1 Asset) ---
+            print("      💎 [Acto 2/4] Generando Hero Asset 3D Glassmorphic del Producto...")
+            hero_asset_img = work / "hero_product_3d.jpg"
+            if not hero_asset_img.exists():
+                prompt_hero = f"isolated 3D floating {tema[:40]} device, high tech glassmorphic hardware, studio lighting, obsidian background, 8k, octane render"
+                descargar_imagen_v3(prompt_hero, hero_asset_img, seed=777)
+                
+            clip_prod_3d = work / "v_product_3d.mp4"
+            if hero_asset_img.exists():
+                ok_p3d = crear_clip_producto_3d_flotante(hero_asset_img, clip_prod_3d, duracion=4.5, width=tw, height=th)
+                if ok_p3d and clip_prod_3d.exists():
+                    storyboard_videos.append(str(clip_prod_3d.resolve()))
+                    
+            # --- ACTO 3 (8.5s - 16.0s): B-Roll Cinemático Wan 2.1 14B en GPU RTX 5090 ---
+            print("      🚀 [Acto 3/4] Generando B-Roll de Alta Fidelidad con Wan 2.1 14B en RTX 5090...")
+            clip_wan_broll = work / "v_wan_broll.mp4"
+            query_broll = f"futuristic technology demonstrating {tema[:40]}"
+            ok_wan = generar_video_comfyui_remoto(query_broll, clip_wan_broll, host=host_host, timeout=300)
+            if ok_wan and clip_wan_broll.exists():
+                storyboard_videos.append(str(clip_wan_broll.resolve()))
+            else:
+                # Fallback stock 4K rápido sin descargas redundantes
+                clips_stock = descargar_video_clips(tema, work, dur_audio, guion=guion, investigacion=investigacion)
+                if clips_stock and isinstance(clips_stock, list):
+                    storyboard_videos.extend(clips_stock[:1])
+                    
+            # --- ACTO 4 (16.0s - Fin): Outro / Cierre de la Presentadora con Guiño ---
+            print("      🌸 [Acto 4/4] Integrando Outro de Despedida y CTA...")
+            outro_vault = Path("assets/avatar/motion_vault/07_outro_farewell_wink.mp4")
+            if outro_vault.exists():
+                storyboard_videos.append(str(outro_vault.resolve()))
+                
+            videos = storyboard_videos
+            imagenes = ["i0.jpg"]
+            print(f"      ✅ Storyboard completado: {len(videos)} escenas cinemáticas de máxima calidad listas.")
             
             # 7 render
             print(f"   [7/10] Render {'(regenerando)' if intento > 1 else ''}...")

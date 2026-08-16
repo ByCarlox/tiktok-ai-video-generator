@@ -19,7 +19,7 @@ from metadata import generar_metadata, actualizar_obsidian_con_metadata
 from publisher import publicar_video
 from qa_review import revisar_video, MAX_REINTENTOS, evaluar_asset_imagen, evaluar_asset_video
 from investigacion import investigar_tema
-from media_fetcher import obtener_clips_multi_fuente, obtener_clips_multi_fuente_hibrido
+from media_fetcher import obtener_clips_multi_fuente, obtener_clips_multi_fuente_hibrido, generar_video_comfyui_remoto
 from product_fetcher import obtener_imagenes_producto_real
 from compositor import componer_smart_backdrop, generar_overlay_onda_audio
 from product_3d import componer_tarjeta_3d_glassmorphism, crear_clip_producto_3d_flotante

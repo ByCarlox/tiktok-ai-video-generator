@@ -1,0 +1,44 @@
+{
+  "01_intro_greeting": {
+    "archivo": "01_intro_greeting.mp4",
+    "ruta": "/Users/cf/Documents/IA Tik Tok Project/Tik Tok/assets/avatar/motion_vault/01_intro_greeting.mp4",
+    "nombre": "Intro Dinámica y Saludo",
+    "duracion": 3.5
+  },
+  "02_explaining_tech": {
+    "archivo": "02_explaining_tech.mp4",
+    "ruta": "/Users/cf/Documents/IA Tik Tok Project/Tik Tok/assets/avatar/motion_vault/02_explaining_tech.mp4",
+    "nombre": "Explicación Tecnológica Activa",
+    "duracion": 4.0
+  },
+  "03_shock_mindblown": {
+    "archivo": "03_shock_mindblown.mp4",
+    "ruta": "/Users/cf/Documents/IA Tik Tok Project/Tik Tok/assets/avatar/motion_vault/03_shock_mindblown.mp4",
+    "nombre": "Reacción de Impacto / Asombro",
+    "duracion": 3.0
+  },
+  "04_mystery_conspiracy": {
+    "archivo": "04_mystery_conspiracy.mp4",
+    "ruta": "/Users/cf/Documents/IA Tik Tok Project/Tik Tok/assets/avatar/motion_vault/04_mystery_conspiracy.mp4",
+    "nombre": "Misterio y Teorías",
+    "duracion": 4.0
+  },
+  "05_pointing_product": {
+    "archivo": "05_pointing_product.mp4",
+    "ruta": "/Users/cf/Documents/IA Tik Tok Project/Tik Tok/assets/avatar/motion_vault/05_pointing_product.mp4",
+    "nombre": "Presentando Tarjeta 3D / Producto",
+    "duracion": 3.5
+  },
+  "06_pip_continuous_talking": {
+    "archivo": "v_avatar_pip.mov",
+    "ruta": "/Users/cf/Documents/IA Tik Tok Project/Tik Tok/assets/avatar/motion_vault/v_avatar_pip.mov",
+    "nombre": "Badge PIP Circular Continuo",
+    "duracion": 6.0
+  },
+  "07_outro_farewell_wink": {
+    "archivo": "07_outro_farewell_wink.mp4",
+    "ruta": "/Users/cf/Documents/IA Tik Tok Project/Tik Tok/assets/avatar/motion_vault/07_outro_farewell_wink.mp4",
+    "nombre": "Despedida y Guiño de Ojo",
+    "duracion": 3.5
+  }
+}

@@ -171,11 +171,41 @@ def animar_personaje_neuronal_comfyui(avatar_img_path: Path, audio_path: Path, o
         
     return False
 
-def crear_clip_intro_presentador(avatar_img_path: Path, output_clip: Path, duracion: float = 3.5, width: int = 1080, height: int = 1920, audio_path: Path = None, host: str = "http://100.95.107.65:8188") -> bool:
+def obtener_clip_motion_vault(tema: str = "", guion: str = "") -> Path:
+    """Selecciona inteligentemente el clip animado de la presentadora según el tono del guion."""
+    vault_dir = Path("assets/avatar/motion_vault")
+    if not vault_dir.exists():
+        return None
+        
+    t = (tema + " " + guion).lower()
+    if any(k in t for k in ["misterio", "conspiracion", "secreto", "dark", "revelado", "alien", "oculto", "peligro"]):
+        p = vault_dir / "04_mystery_conspiracy.mp4"
+    elif any(k in t for k in ["impactante", "locura", "alerta", "urgente", "increible", "millones", "prohibido", "brutal"]):
+        p = vault_dir / "03_shock_mindblown.mp4"
+    elif any(k in t for k in ["lanzamiento", "nuevo", "gadget", "nvidia", "apple", "hardware", "chip", "robot", "ia"]):
+        p = vault_dir / "02_explaining_tech.mp4"
+    else:
+        p = vault_dir / "01_intro_greeting.mp4"
+        
+    if p.exists() and p.stat().st_size > 1000:
+        return p
+        
+    p_def = vault_dir / "01_intro_greeting.mp4"
+    return p_def if (p_def.exists() and p_def.stat().st_size > 1000) else None
+
+def crear_clip_intro_presentador(avatar_img_path: Path, output_clip: Path, duracion: float = 3.5, width: int = 1080, height: int = 1920, audio_path: Path = None, host: str = "http://100.95.107.65:8188", tema: str = "", guion: str = "") -> bool:
     """Crea el clip de introducción vertical de la presentadora con animación cinematográfica 3D fluida."""
     output_clip = Path(output_clip)
     output_clip.parent.mkdir(parents=True, exist_ok=True)
     
+    # 0. Usar Motion Vault si está disponible
+    mv_clip = obtener_clip_motion_vault(tema=tema, guion=guion)
+    if mv_clip:
+        import shutil
+        shutil.copy2(mv_clip, output_clip)
+        print(f"      🌸 Usando Escenario Animado del Motion Vault: [{mv_clip.name}]")
+        return True
+        
     if not avatar_img_path.exists():
         return False
         

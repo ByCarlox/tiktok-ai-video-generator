@@ -1031,14 +1031,14 @@ async def procesar_tema(tema, indice):
                     estilo_avatar = config.get("avatar_presentador", {}).get("estilo", "kawaii_waifu")
                     host_ok = generar_avatar_en_rtx5090(avatar_host_img, host=host_host, tema=tema, estilo=estilo_avatar)
                     if host_ok:
-                        # Animar con motor VTuber facial orgánico a 30 FPS
+                        # Animar con Motion Vault o motor neuronal/VTuber a 30 FPS
                         res_type = config.get("resolucion", "1080p").lower()
                         tw, th = (2160, 3840) if res_type == "4k" else (1080, 1920)
-                        ok_intro = renderizar_vtuber_animada(avatar_host_img, work / "a_voz.mp3", intro_host_clip, width=tw, height=th, duracion_max=3.5, modo="full")
+                        ok_intro = crear_clip_intro_presentador(avatar_host_img, intro_host_clip, duracion=3.5, width=tw, height=th, audio_path=work / "a_voz.mp3", host=host_host, tema=tema, guion=guion)
                         if not ok_intro:
-                            ok_intro = crear_clip_intro_presentador(avatar_host_img, intro_host_clip, duracion=3.5, width=tw, height=th, audio_path=work / "a_voz.mp3", host=host_host)
+                            ok_intro = renderizar_vtuber_animada(avatar_host_img, work / "a_voz.mp3", intro_host_clip, width=tw, height=th, duracion_max=3.5, modo="full")
                         if ok_intro and intro_host_clip.exists():
-                            print(f"      🌸 Clip de Presentadora (Animación Facial Orgánica a 30 FPS) integrado al inicio.")
+                            print(f"      🌸 Clip de Presentadora (Animación Orgánica Motion Vault) integrado al inicio.")
                             videos.insert(0, str(intro_host_clip.resolve()))
                             
             fotos = paso_imagenes(prompts, work, n_fotos, tema=tema, investigacion=investigacion)

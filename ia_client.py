@@ -87,6 +87,33 @@ def generar_guion(tema: str, duracion: int = 40, investigacion: dict = None) -> 
     if not investigacion:
         resumen_tecnico = f"Conceptos avanzados sobre {tema}"
         hechos_clave = [f"Desarrollo clave en {tema}", "Innovación técnica comprobada", "Impacto cuantitativo relevante en USD"]
+def obtener_modelo_ollama_disponible(host: str, modelo_preferido: str) -> str:
+    """Verifica si el modelo preferido está en Ollama, o selecciona automáticamente el mejor Qwen/DeepSeek disponible."""
+    try:
+        r = requests.get(f"{host}/api/tags", timeout=4)
+        if r.status_code == 200:
+            modelos_instalados = [m.get("name") for m in r.json().get("models", [])]
+            # Si el modelo preferido exacto está presente
+            if modelo_preferido in modelos_instalados:
+                return modelo_preferido
+            # Si el usuario ya tiene qwen3.6:35b instalado
+            for cand in ["qwen3.6:35b", "qwen3.5:35b", "qwen3:32b", "qwen2.5:72b-instruct-q4_K_M", "qwen2.5:32b", "deepseek-r1:32b", "qwen2.5:14b"]:
+                for m in modelos_instalados:
+                    if cand in m or m.startswith(cand.split(":")[0]):
+                        return m
+            if modelos_instalados:
+                return modelos_instalados[0]
+    except Exception:
+        pass
+    return modelo_preferido
+
+def generar_guion(tema: str, duracion: int = 40, investigacion: dict = None) -> str:
+    config = cargar_config()
+    ia = config["ia"]
+    
+    if not investigacion:
+        resumen_tecnico = f"Noticias e innovaciones recientes sobre {tema}."
+        hechos_clave = [f"Impacto revolucionario en el mercado global", "Datos cuantitativos y proyecciones"]
         terminologia = "tecnología, innovación, avance"
         angulo = "revolución tecnológica"
     else:
@@ -106,10 +133,11 @@ def generar_guion(tema: str, duracion: int = 40, investigacion: dict = None) -> 
     
     if ia["proveedor"] in ("ollama_remote", "ollama"):
         host = ia.get("host_remoto", "http://100.95.107.65:11434") if ia["proveedor"] == "ollama_remote" else "http://localhost:11434"
+        modelo_activo = obtener_modelo_ollama_disponible(host, ia.get("modelo", "qwen3.6:35b"))
         try:
             r = requests.post(
                 f"{host}/api/generate",
-                json={"model": ia["modelo"], "prompt": prompt, "stream": False},
+                json={"model": modelo_activo, "prompt": prompt, "stream": False},
                 timeout=90
             )
             if r.status_code == 200:

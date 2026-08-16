@@ -161,7 +161,8 @@ def descargar_video_clips(tema, work, dur_audio, guion="", investigacion=None):
         ], f"preparando clip {idx}", cwd=work)
 
     # 2. Obtener usando flujo híbrido (IA ComfyUI en RTX 5090 + Fallback Stock Multi-Fuente)
-    return obtener_clips_multi_fuente_hibrido(queries, work, dur_audio, ffmpeg_scaler, tema=tema, pre_eval_func=evaluar_asset_video)
+    res_v = obtener_clips_multi_fuente_hibrido(queries, work, dur_audio, ffmpeg_scaler, tema=tema, pre_eval_func=evaluar_asset_video)
+    return res_v if isinstance(res_v, list) else []
 
 PALABRAS_CLAVE_HIGHLIGHT = {
     "ia", "ai", "chatgpt", "openai", "gpu", "rtx", "5090", "m4", "apple", "google", "meta",
@@ -1014,6 +1015,8 @@ async def procesar_tema(tema, indice):
             n_fotos = min(7, max(4, dur_max // 5))
             prompts = generar_prompts_para_guion(guion, n_fotos, investigacion=investigacion)
             videos = descargar_video_clips(tema, work, dur_audio, guion=guion, investigacion=investigacion)
+            if not isinstance(videos, list):
+                videos = []
             
             # Integrar clip del Presentador Virtual Faceless animado con Lip-Sync
             if config.get("avatar_presentador", {}).get("activado", True):

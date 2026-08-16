@@ -257,6 +257,8 @@ def obtener_clips_multi_fuente(queries, work_dir, dur_audio, ffmpeg_scaler, tema
                 except Exception:
                     clip_path.unlink(missing_ok=True)
                     
+        return rutas
+
 def obtener_checkpoint_disponible(host):
     """Consulta a la API de ComfyUI qué modelos de checkpoint .safetensors están instalados en la GPU."""
     try:

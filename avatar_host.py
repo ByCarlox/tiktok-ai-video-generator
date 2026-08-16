@@ -109,8 +109,8 @@ def generar_avatar_en_rtx5090(output_path: Path, host: str = "http://100.95.107.
 
 def animar_personaje_neuronal_comfyui(avatar_img_path: Path, audio_path: Path, output_clip: Path, host: str = "http://100.95.107.65:8188", duracion: float = 3.5, width: int = 1080, height: int = 1920) -> bool:
     """
-    Envía el modelo de la Waifu y el audio a ComfyUI en la RTX 5090 para sintetizar
-    animación facial neuronal 3D real (LivePortrait / Wan 2.1 I2V) con movimiento orgánico de labios, ojos y cabeza.
+    Envía el modelo de la Waifu a ComfyUI en la RTX 5090 para sintetizar
+    animación facial y corporal por IA (Wan 2.1 I2V / LivePortrait) con movimiento orgánico completo.
     """
     output_clip = Path(output_clip)
     output_clip.parent.mkdir(parents=True, exist_ok=True)
@@ -122,17 +122,52 @@ def animar_personaje_neuronal_comfyui(avatar_img_path: Path, audio_path: Path, o
         r_info = requests.get(f"{host}/object_info", timeout=4)
         if r_info.status_code == 200:
             nodes = r_info.json()
-            if "LivePortraitProcess" in nodes or "WanVideoSampler" in nodes or "LivePortraitLoadCropper" in nodes:
-                print(f"      🎭 [LIVEPORTRAIT / WAN 2.1 I2V] Sintetizando animación facial 3D real en la RTX 5090...")
-                # Subir imagen y audio a ComfyUI
-                files = {'image': open(avatar_img_path, 'rb')}
-                up_res = requests.post(f"{host}/upload/image", files=files, timeout=15)
+            if "WanImageToVideo" in nodes or "WanInfiniteTalkToVideo" in nodes or "KSampler" in nodes:
+                print(f"      🎭 [WAN 2.1 I2V NEURAL ENGINE] Enviando personaje a la GPU RTX 5090...")
+                with open(avatar_img_path, 'rb') as f:
+                    up_res = requests.post(f"{host}/upload/image", files={'image': f}, timeout=15)
                 if up_res.status_code == 200:
-                    img_server_name = up_res.json().get("name", avatar_img_path.name)
-                    # Flujo de LivePortrait
-                    # ...
+                    img_name = up_res.json().get("name", avatar_img_path.name)
+                    
+                    prompt_workflow = {
+                        "prompt": {
+                            "1": {"class_type": "UNETLoader", "inputs": {"unet_name": "wan2.1_i2v_720p_14B_fp8_e4m3fn.safetensors", "weight_dtype": "fp8_e4m3fn"}},
+                            "2": {"class_type": "CLIPLoader", "inputs": {"clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors", "type": "wan"}},
+                            "3": {"class_type": "VAELoader", "inputs": {"vae_name": "wan_2.1_vae.safetensors"}},
+                            "4": {"class_type": "CLIPVisionLoader", "inputs": {"clip_name": "clip_vision_h.safetensors"}},
+                            "5": {"class_type": "LoadImage", "inputs": {"image": img_name}},
+                            "6": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": "masterpiece, best quality, ultra-detailed anime girl news presenter, talking enthusiastically, natural mouth movement, blinking eyes, expressive smile, moving head, dynamic lighting, 8k, fluid motion"}},
+                            "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": "blurry, low quality, static, deformed, glitch, distortion"}},
+                            "8": {"class_type": "WanImageToVideo", "inputs": {"positive": ["6", 0], "negative": ["7", 0], "vae": ["3", 0], "width": 720, "height": 1280, "length": 81, "batch_size": 1, "start_image": ["5", 0]}},
+                            "9": {"class_type": "KSampler", "inputs": {"model": ["1", 0], "positive": ["8", 0], "negative": ["8", 1], "latent_image": ["8", 2], "seed": 7777, "steps": 25, "cfg": 6.0, "sampler_name": "euler", "scheduler": "normal", "denoise": 1.0}},
+                            "10": {"class_type": "VAEDecode", "inputs": {"samples": ["9", 0], "vae": ["3", 0]}},
+                            "11": {"class_type": "SaveAnimatedWEBP", "inputs": {"images": ["10", 0], "fps": 24, "filename_prefix": "WanAvatar"}}
+                        }
+                    }
+                    
+                    q_res = requests.post(f"{host}/prompt", json=prompt_workflow, timeout=10)
+                    if q_res.status_code == 200:
+                        prompt_id = q_res.json().get("prompt_id")
+                        print(f"      ⏳ Generando animación IA en RTX 5090 (ID: {prompt_id[:8]})...")
+                        for _ in range(60):
+                            time.sleep(5)
+                            h_res = requests.get(f"{host}/history/{prompt_id}", timeout=5).json()
+                            if prompt_id in h_res:
+                                outputs = h_res[prompt_id].get("outputs", {})
+                                for node_out in outputs.values():
+                                    if "images" in node_out or "gifs" in node_out:
+                                        file_info = (node_out.get("images") or node_out.get("gifs"))[0]
+                                        view_url = f"{host}/view?filename={file_info['filename']}&subfolder={file_info.get('subfolder','')}&type={file_info.get('type','output')}"
+                                        vid_bytes = requests.get(view_url, timeout=30).content
+                                        tmp_res = output_clip.parent / "wan_raw_anim.webp"
+                                        tmp_res.write_bytes(vid_bytes)
+                                        subprocess.run(["ffmpeg", "-y", "-i", str(tmp_res.resolve()), "-c:v", "libx264", "-pix_fmt", "yuv420p", str(output_clip.resolve())], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                                        tmp_res.unlink(missing_ok=True)
+                                        if output_clip.exists() and output_clip.stat().st_size > 10000:
+                                            print("      ✅ ¡Video de Personaje Animado por IA completado exitosamente en RTX 5090!")
+                                            return True
     except Exception as e:
-        print(f"      ℹ️ ComfyUI LivePortrait en proceso de inicialización ({e}).")
+        print(f"      ℹ️ ComfyUI Wan 2.1 I2V fallback: {e}")
         
     return False
 

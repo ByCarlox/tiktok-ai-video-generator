@@ -139,7 +139,7 @@ def animar_personaje_neuronal_comfyui(avatar_img_path: Path, audio_path: Path, o
                             "4": {"class_type": "CLIPVisionLoader", "inputs": {"clip_name": "clip_vision_h.safetensors"}},
                             "5": {"class_type": "LoadImage", "inputs": {"image": img_name}},
                             "6": {"class_type": "CLIPVisionEncode", "inputs": {"clip_vision": ["4", 0], "image": ["5", 0], "crop": "center"}},
-                            "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": "masterpiece, best quality, ultra-detailed anime girl news presenter, talking enthusiastically, natural mouth movement, blinking eyes, expressive smile, moving head, dynamic lighting, 8k, fluid motion"}},
+                            "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": "masterpiece, best quality, ultra-detailed 8k anime girl tech presenter, extremely lively and expressive facial expressions, enthusiastic talking and speaking, cute warm smile, bright blinking purple eyes, expressive eye contact, natural dynamic head tilts, fluid body movement, lively hand gestures, modern cyberpunk broadcast studio, vibrant particle effects, octane render, smooth motion, maximum viral engagement"}},
                             "8": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": "blurry, low quality, static, deformed, glitch, distortion"}},
                             "9": {"class_type": "WanImageToVideo", "inputs": {"positive": ["7", 0], "negative": ["8", 0], "vae": ["3", 0], "width": 720, "height": 1280, "length": 81, "batch_size": 1, "start_image": ["5", 0], "clip_vision_output": ["6", 0]}},
                             "10": {"class_type": "KSampler", "inputs": {"model": ["1", 0], "positive": ["9", 0], "negative": ["9", 1], "latent_image": ["9", 2], "seed": 7777, "steps": 25, "cfg": 6.0, "sampler_name": "euler", "scheduler": "normal", "denoise": 1.0}},
@@ -201,22 +201,19 @@ def crear_clip_intro_presentador(avatar_img_path: Path, output_clip: Path, durac
     output_clip = Path(output_clip)
     output_clip.parent.mkdir(parents=True, exist_ok=True)
     
-    # 0. Usar Motion Vault si está disponible
+    # 1. Prioridad Máxima: Animación Neuronal Viva en la GPU RTX 5090 con Wan 2.1 I2V 14B
+    if avatar_img_path.exists():
+        ok_neural = animar_personaje_neuronal_comfyui(avatar_img_path, audio_path, output_clip, host=host, duracion=duracion, width=width, height=height)
+        if ok_neural and output_clip.exists() and output_clip.stat().st_size > 5000:
+            print("      🌸 ¡Presentadora 100% Animada por Wan 2.1 I2V en la RTX 5090 con alto engagement!")
+            return True
+
+    # 2. Resguardo Secundario: Usar Motion Vault si la GPU estuviese ocupada
     mv_clip = obtener_clip_motion_vault(tema=tema, guion=guion)
     if mv_clip:
-        import shutil
         shutil.copy2(mv_clip, output_clip)
         print(f"      🌸 Usando Escenario Animado del Motion Vault: [{mv_clip.name}]")
         return True
-        
-    if not avatar_img_path.exists():
-        return False
-        
-    # 1. Intentar animación neuronal en la GPU RTX 5090 (LivePortrait / Wan 2.1 I2V)
-    if audio_path and Path(audio_path).exists():
-        ok_neural = animar_personaje_neuronal_comfyui(avatar_img_path, audio_path, output_clip, host=host, duracion=duracion, width=width, height=height)
-        if ok_neural and output_clip.exists() and output_clip.stat().st_size > 5000:
-            return True
             
     # 2. Composición Cinematográfica 3D en Set Anime (Limpia, elegante, sin parches 2D)
     try:

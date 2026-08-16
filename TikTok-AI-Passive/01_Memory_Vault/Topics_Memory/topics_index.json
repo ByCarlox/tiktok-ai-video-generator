@@ -52,5 +52,14 @@
     "qa_score": 90.0,
     "duracion": 18.8,
     "video_file": "20260816_1536_google-will-now-allow-users-to-remove-visible-wate.mp4"
+  },
+  "20260816_1642_salesforce_rolls_out_new_slackbot_a": {
+    "tema": "Salesforce rolls out new Slackbot AI agent as it battles Microsoft and Google in workplace AI",
+    "category": "tecnologia",
+    "date_last": "2026-08-16 16:42:44",
+    "times_covered": 1,
+    "qa_score": 90.0,
+    "duracion": 17.8,
+    "video_file": "20260816_1636_salesforce-rolls-out-new-slackbot-ai-agent-as-it-b.mp4"
   }
 }

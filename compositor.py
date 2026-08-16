@@ -118,5 +118,74 @@ def generar_overlay_onda_audio(amplitud: float, output_path: Path, width: int = 
         final_img = Image.alpha_composite(glow, img)
         final_img.save(output_path, "PNG")
         return True
-    except Exception as e:
+    except Exception:
         return False
+
+def generar_pista_sfx_master(dur_total: float, output_wav: Path, timestamps_cortes: list = None, sample_rate: int = 44100) -> bool:
+    """
+    Genera una pista masterizada de efectos de sonido (Auto-SFX) perfectamente sincronizada con los cambios de escena:
+    - 0.0s: Sub-Impact Boom para retención instantánea en el gancho.
+    - 3.5s: Pop holográfico + Whoosh al revelar la tarjeta 3D del producto.
+    - Cortes posteriores: Transiciones Whoosh dinámicas.
+    """
+    output_wav = Path(output_wav)
+    output_wav.parent.mkdir(parents=True, exist_ok=True)
+    
+    import wave
+    import numpy as np
+    
+    sfx_dir = Path("assets/sfx")
+    sub_path = sfx_dir / "sub_impact_hook.wav"
+    pop_path = sfx_dir / "hologram_pop.wav"
+    whoosh_path = sfx_dir / "whoosh_transition.wav"
+    
+    total_samples = int(dur_total * sample_rate) + sample_rate
+    master_audio = np.zeros(total_samples, dtype=np.float32)
+    
+    def read_wav(p):
+        if not p.exists():
+            return None
+        with wave.open(str(p), "r") as wf:
+            n = wf.getnframes()
+            data = wf.readframes(n)
+            return np.frombuffer(data, dtype=np.int16).astype(np.float32) / 32768.0
+            
+    sub_data = read_wav(sub_path)
+    pop_data = read_wav(pop_path)
+    whoosh_data = read_wav(whoosh_path)
+    
+    # 1. Inyectar Sub-Impact al inicio (0.0s)
+    if sub_data is not None:
+        l = min(len(sub_data), total_samples)
+        master_audio[:l] += sub_data[:l] * 0.75
+        
+    # 2. Inyectar Pop Holográfico en el corte del producto (3.5s)
+    if pop_data is not None and total_samples > int(3.5 * sample_rate):
+        start = int(3.5 * sample_rate)
+        l = min(len(pop_data), total_samples - start)
+        master_audio[start:start+l] += pop_data[:l] * 0.65
+        
+    # 3. Inyectar Whooshes en los cortes
+    cortes = timestamps_cortes if timestamps_cortes else [3.5, 8.5, 16.0]
+    if whoosh_data is not None:
+        for t_sec in cortes:
+            start = max(0, int((t_sec - 0.15) * sample_rate))
+            if start < total_samples:
+                l = min(len(whoosh_data), total_samples - start)
+                master_audio[start:start+l] += whoosh_data[:l] * 0.50
+                
+    # Normalizar para evitar clipping
+    max_val = np.max(np.abs(master_audio))
+    if max_val > 0.95:
+        master_audio = master_audio * (0.95 / max_val)
+        
+    audio_int16 = (master_audio[:int(dur_total * sample_rate)] * 32767).astype(np.int16)
+    
+    with wave.open(str(output_wav), "w") as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)
+        wf.setframerate(sample_rate)
+        wf.writeframes(audio_int16.tobytes())
+        
+    return output_wav.exists() and output_wav.stat().st_size > 0
+

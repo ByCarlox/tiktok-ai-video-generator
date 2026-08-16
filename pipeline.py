@@ -23,7 +23,7 @@ from qa_review import revisar_video, MAX_REINTENTOS, evaluar_asset_imagen, evalu
 from investigacion import investigar_tema
 from media_fetcher import obtener_clips_multi_fuente, obtener_clips_multi_fuente_hibrido, generar_video_comfyui_remoto
 from product_fetcher import obtener_imagenes_producto_real
-from compositor import componer_smart_backdrop, generar_overlay_onda_audio
+from compositor import componer_smart_backdrop, generar_overlay_onda_audio, generar_pista_sfx_master
 from product_3d import componer_tarjeta_3d_glassmorphism, crear_clip_producto_3d_flotante
 from avatar_host import generar_avatar_en_rtx5090, crear_clip_intro_presentador, crear_video_pip_badge_animado
 from lip_sync import generar_clip_avatar_lipsync
@@ -777,7 +777,12 @@ def paso_render_pillow(imagenes, videos, audio, srt_path, musica, salida, work):
             if ok_vid_pip and pip_vid.exists():
                 tiene_pip_vid = True
             
-    # 5. Mezclar fondo, subtítulos overlay, PIP avatar y audio masterizado (sin barras de onda)
+    # 5. Generar Pista de Sound Design (Auto-SFX) sincronizada con los actos
+    sfx_wav = work / "sfx.wav"
+    generar_pista_sfx_master(dur_audio, sfx_wav, timestamps_cortes=[3.5, 8.5, 16.0])
+    tiene_sfx = sfx_wav.exists() and sfx_wav.stat().st_size > 1000
+
+    # 6. Mezclar fondo, subtítulos overlay, PIP avatar y audio masterizado (Voz + Música + SFX)
     max_mbps = config.get("compositor", {}).get("bitrate_max_mbps", 40)
     cmd = [
         "ffmpeg", "-y",
@@ -800,29 +805,46 @@ def paso_render_pillow(imagenes, videos, audio, srt_path, musica, salida, work):
         audio_in_idx = 2
         
     cmd += ["-i", "a.mp3"]
+    curr_audio_idx = audio_in_idx
+    
+    inputs_a = [f"[{audio_in_idx}:a]"]
+    filter_a_steps = []
     
     if tiene_musica:
         cmd += ["-stream_loop", "-1", "-i", "m.mp3"]
-        musica_in_idx = audio_in_idx + 1
-        fc = (f"{v_chain};"
-              f"[{musica_in_idx}:a]volume=0.25[m];[m][{audio_in_idx}:a]sidechaincompress="
-              f"threshold=0.125:ratio=6:attack=15:release=250[ducked];"
-              f"[ducked][{audio_in_idx}:a]amix=inputs=2:duration=first:dropout_transition=2,"
-              f"loudnorm=I=-14:LRA=11:TP=-1.5[outa]")
-        cmd += [
-            "-filter_complex", fc,
-            "-map", "[outv]",
-            "-map", "[outa]"
-        ]
-    else:
-        fc = f"{v_chain}"
-        cmd += [
-            "-filter_complex", fc,
-            "-map", "[outv]",
-            "-map", f"{audio_in_idx}:a"
-        ]
+        musica_in_idx = curr_audio_idx + 1
+        curr_audio_idx += 1
+        filter_a_steps.append(
+            f"[{musica_in_idx}:a]volume=0.22[m_raw];"
+            f"[m_raw][{audio_in_idx}:a]sidechaincompress=threshold=0.12:ratio=6:attack=15:release=250[ducked_m]"
+        )
+        inputs_a.append("[ducked_m]")
         
+    if tiene_sfx:
+        cmd += ["-i", "sfx.wav"]
+        sfx_in_idx = curr_audio_idx + 1
+        curr_audio_idx += 1
+        filter_a_steps.append(f"[{sfx_in_idx}:a]volume=0.70[sfx_vol]")
+        inputs_a.append("[sfx_vol]")
+        
+    all_inputs_str = "".join(inputs_a)
+    n_a_inputs = len(inputs_a)
+    
+    if n_a_inputs > 1:
+        mix_str = f"{all_inputs_str}amix=inputs={n_a_inputs}:duration=first:dropout_transition=2,loudnorm=I=-14:LRA=11:TP=-1.5[outa]"
+    else:
+        mix_str = f"[{audio_in_idx}:a]loudnorm=I=-14:LRA=11:TP=-1.5[outa]"
+        
+    if filter_a_steps:
+        full_a_filter = ";".join(filter_a_steps) + ";" + mix_str
+    else:
+        full_a_filter = mix_str
+        
+    fc = f"{v_chain};{full_a_filter}"
     cmd += [
+        "-filter_complex", fc,
+        "-map", "[outv]",
+        "-map", "[outa]",
         "-c:v", "libx264", "-preset", "slow", "-crf", str(crf),
         "-maxrate", f"{max_mbps}M", "-bufsize", f"{max_mbps * 2}M",
         "-c:a", "aac", "-b:a", "320k",
@@ -830,7 +852,7 @@ def paso_render_pillow(imagenes, videos, audio, srt_path, musica, salida, work):
         "-movflags", "+faststart",
         str(salida.resolve())
     ]
-    run_ffmpeg(cmd, "renderizando video master broadcast con subtitulos, presentador PIP y efectos", cwd=work)
+    run_ffmpeg(cmd, "renderizando video master broadcast con subtitulos, presentador PIP y sound design SFX", cwd=work)
 
 def paso_render(imagenes, audio, srt, musica, salida, work):
     print(f"   🎬 Render PRO ({len(imagenes)} escenas + crossfade + ducking)...")

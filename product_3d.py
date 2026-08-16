@@ -130,22 +130,28 @@ def componer_tarjeta_3d_glassmorphism(imagen_path: Path, output_path: Path, widt
         print(f"      ⚠️ Error en composición 3D glassmorphic: {e}")
         return False
 
-def crear_clip_producto_3d_flotante(imagen_3d_path: Path, output_clip: Path, duracion: float = 5.0, width: int = 1080, height: int = 1920) -> bool:
-    """Genera un videoclip vertical con animación cinemática de levitación 3D suave."""
+def crear_clip_producto_3d_flotante(imagen_path: Path, output_clip: Path, duracion: float = 5.0, width: int = 1080, height: int = 1920) -> bool:
+    """Genera un videoclip vertical con composición Glassmorphic 3D y animación orbital flotante fluida."""
     output_clip = Path(output_clip)
     output_clip.parent.mkdir(parents=True, exist_ok=True)
     
     try:
+        # 1. Componer la tarjeta 3D Glassmorphic de alta fidelidad si es una imagen simple
+        comp_img = output_clip.parent / f"glass_comp_{output_clip.stem}.jpg"
+        ok_comp = componer_tarjeta_3d_glassmorphism(imagen_path, comp_img, width=width, height=height)
+        source_render = comp_img if (ok_comp and comp_img.exists()) else imagen_path
+        
         fps = 30
         frames = int(duracion * fps)
-        # Ken Burns cinematográfico con paneo sutil
+        
+        # 2. Renderizado Cinemático con Levitación Senoidal Suave y Paneo Orbital 3D
         cmd = [
-            "ffmpeg", "-y", "-loop", "1", "-i", str(imagen_3d_path.resolve()),
+            "ffmpeg", "-y", "-loop", "1", "-i", str(source_render.resolve()),
             "-vf", f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height},"
-                   f"zoompan=z='min(zoom+0.0014,1.12)':d={frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)+sin(on/15)*12':s={width}x{height}",
+                   f"zoompan=z='min(zoom+0.0018,1.14)':d={frames}:x='iw/2-(iw/zoom/2)+sin(on/18)*18':y='ih/2-(ih/zoom/2)+cos(on/14)*14':s={width}x{height}",
             "-t", f"{duracion:.2f}", "-pix_fmt", "yuv420p", "-r", str(fps), "-an", str(output_clip.resolve())
         ]
-        res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return output_clip.exists() and output_clip.stat().st_size > 5000
     except Exception as e:
         print(f"      ⚠️ Error creando clip de producto 3D: {e}")

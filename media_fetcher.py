@@ -299,9 +299,9 @@ def generar_video_comfyui_remoto(prompt, output_clip, host="http://100.95.107.65
                         "1": {"class_type": "UNETLoader", "inputs": {"unet_name": wan_model, "weight_dtype": "fp8_e4m3fn"}},
                         "2": {"class_type": "CLIPLoader", "inputs": {"clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors", "type": "wan"}},
                         "3": {"class_type": "VAELoader", "inputs": {"vae_name": "wan_2.1_vae.safetensors"}},
-                        "4": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": f"cinematic 8k vertical video, high technology, {prompt}, masterfully composed, raytracing lighting, 8k resolution, octane render, smooth fluid motion"}},
-                        "5": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": "blurry, low quality, distortion, ugly, text, watermark"}},
-                        "6": {"class_type": "WanImageToVideo", "inputs": {"positive": ["4", 0], "negative": ["5", 0], "vae": ["3", 0], "width": 480, "height": 832, "length": 49, "batch_size": 1}},
+                        "4": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": f"Cinematic vertical shot. Slow tracking camera move pushing in towards {prompt}. Volumetric rim lighting, intricate circuit details, futuristic atmosphere, 8k octane render, photorealistic masterpiece, smooth fluid motion."}},
+                        "5": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": "blurry, low quality, static, deformed, glitch, distortion, text, watermark, bad anatomy"}},
+                        "6": {"class_type": "WanImageToVideo", "inputs": {"positive": ["4", 0], "negative": ["5", 0], "vae": ["3", 0], "width": 720, "height": 1280, "length": 65, "batch_size": 1}},
                         "7": {"class_type": "KSampler", "inputs": {"model": ["1", 0], "positive": ["6", 0], "negative": ["6", 1], "latent_image": ["6", 2], "seed": 5555, "steps": steps_val, "cfg": 6.0, "sampler_name": "euler", "scheduler": "normal", "denoise": 1.0}},
                         "8": {"class_type": "VAEDecode", "inputs": {"samples": ["7", 0], "vae": ["3", 0]}},
                         "9": {"class_type": "SaveAnimatedPNG", "inputs": {"images": ["8", 0], "fps": 24.0, "compress_level": 4, "filename_prefix": "WanBRoll"}}

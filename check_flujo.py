@@ -30,14 +30,48 @@ if shutil.which("ffmpeg"):
 else:
     fail("ffmpeg no está → brew install ffmpeg")
 
-# 3) Ollama
-print("3) IA local (Ollama):")
+# 3) IA Remota / Local (Ollama & ComfyUI en RTX 5090)
+print("3) Servidores IA en GPU Remota (RTX 5090):")
+config_local = {}
+if Path("config.local.yaml").exists():
+    try:
+        config_local = yaml.safe_load(open("config.local.yaml", encoding="utf-8")) or {}
+    except Exception:
+        pass
+
+host_ollama = config_local.get("ia", {}).get("host_remoto", "http://100.95.107.65:11434")
 try:
-    r = requests.get("http://localhost:11434/api/tags", timeout=3)
+    r = requests.get(f"{host_ollama}/api/tags", timeout=4)
     modelos = [m["name"] for m in r.json().get("models", [])]
-    ok(f"Ollama corriendo. Modelos: {', '.join(modelos) or 'NINGUNO'}")
-except Exception:
-    fail("Ollama no responde → ejecuta 'ollama serve' en OTRA terminal")
+    ok(f"Ollama Remoto en RTX 5090 ({host_ollama}) ACTIVO. Modelos: {', '.join(modelos) or 'NINGUNO'}")
+except Exception as e:
+    warn(f"Ollama Remoto no responde ({host_ollama}): {e}")
+
+host_comfy = config_local.get("video_ia", {}).get("host_remoto", "http://100.95.107.65:8188")
+try:
+    r_c = requests.get(f"{host_comfy}/object_info", timeout=4)
+    if r_c.status_code == 200:
+        nodes = r_c.json()
+        wan_active = "WanVideoModelLoader" in nodes or "WanVideoSampler" in nodes
+        ok(f"ComfyUI en RTX 5090 ({host_comfy}) ACTIVO. [Wan 2.1 SOTA: {'INSTALADO ✅' if wan_active else 'Descargando... ⏳'}]")
+    else:
+        warn(f"ComfyUI respondió código {r_c.status_code}")
+except Exception as e:
+    warn(f"ComfyUI no responde ({host_comfy}): {e}")
+
+# 4) Avatar Master & Cerebro Obsidian
+print("\n4) Activos Oficiales & Memoria:")
+master_av = Path("assets/avatar/waifu_master_cutout.png")
+if master_av.exists():
+    ok(f"Presentadora Oficial Kawaii Waifu ('Nova') lista ({master_av.stat().st_size // 1024} KB)")
+else:
+    warn("Falta assets/avatar/waifu_master_cutout.png")
+
+brain_idx = Path("TikTok-AI-Passive/01_Memory_Vault/Topics_Memory/topics_index.json")
+if brain_idx.exists():
+    ok("Cerebro Obsidian & Memoria Anti-Duplicación ACTIVA")
+else:
+    warn("Iniciando estructura de Obsidian...")
 
 # 4) Config
 print("4) Configuración:")

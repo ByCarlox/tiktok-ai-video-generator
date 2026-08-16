@@ -29,7 +29,7 @@ voz: "es-MX-DaliaNeural"        # Voz dulce, juvenil y super expresiva estilo VT
 ia:
   proveedor: "ollama_remote"     # ollama_remote (GPU Remota vía Tailscale) | nvidia | ollama (local)
   host_remoto: "http://100.x.y.z:11434" # Tu IP privada de Tailscale o localhost
-  modelo: "qwen3.6:35b"         # Modelo 36B masivo de alta capacidad en la GPU remota
+  modelo: "qwen2.5:32b"         # Qwen 2.5 32B (SOTA en razonamiento) o qwen2.5:72b-instruct-q4_K_M
 
 # IA para imágenes y video (elige proveedor)
 imagenes:
@@ -59,6 +59,9 @@ video_ia:
   modo_generacion: "t2v_and_i2v" # Text-to-Video y Image-to-Video
   resolucion_video: "720x1280"   # 9:16 Vertical Nativo
   frames_video: 81               # 81 frames (~3.5 a 4.5 seg de video fluido a 24fps)
+  prioridad_calidad: "maxima"    # maxima (prioriza calidad cinematográfica y detalles sobre rapidez)
+  sampling_steps: 35             # 35-40 pasos de difusión para máximo detalle y cero ruido
+  timeout_segundos: 600          # Hasta 10 minutos de espera paciente para la GPU
 
 obsidian_vault: "TikTok-AI-Passive"
 salida_videos: "output/videos"

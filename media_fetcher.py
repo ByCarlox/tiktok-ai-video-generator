@@ -269,17 +269,22 @@ def obtener_checkpoint_disponible(host):
         pass
     return None
 
-def generar_video_comfyui_remoto(prompt, output_clip, host="http://100.95.107.65:8188", timeout=120):
-    """Envía un prompt a la API de ComfyUI en la RTX 5090 para generar un videoclip dinámico por IA con Wan 2.1 / DiT."""
+def generar_video_comfyui_remoto(prompt, output_clip, host="http://100.95.107.65:8188", timeout=600):
+    """Envía un prompt a la API de ComfyUI en la RTX 5090 para generar un videoclip cinemático de máxima calidad con Wan 2.1 / DiT."""
+    config = cargar_config()
+    cfg_vid = config.get("video_ia", {})
+    steps_val = cfg_vid.get("sampling_steps", 35)
+    timeout_val = cfg_vid.get("timeout_segundos", timeout)
+    
     ckpt_name = obtener_checkpoint_disponible(host)
     
     # 1. Detectar si ComfyUI tiene instalado el nodo Wan 2.1 (Alibaba SOTA)
     try:
-        r_info = requests.get(f"{host}/object_info", timeout=4)
+        r_info = requests.get(f"{host}/object_info", timeout=5)
         if r_info.status_code == 200:
             nodes = r_info.json()
             if "WanVideoModelLoader" in nodes or "WanVideoSampler" in nodes or "Wan21_Text2Video" in nodes:
-                print(f"      🎬 [WAN 2.1 SOTA 14B] Sintetizando videoclip cinemático nativo en la GPU RTX 5090...")
+                print(f"      🎬 [WAN 2.1 SOTA 14B] Sintetizando videoclip cinemático de máxima calidad ({steps_val} pasos) en la RTX 5090...")
     except Exception:
         pass
 
@@ -287,13 +292,13 @@ def generar_video_comfyui_remoto(prompt, output_clip, host="http://100.95.107.65
         print(f"      ℹ️ ComfyUI activo, pero la carpeta 'ComfyUI/models/checkpoints' está vacía en la GPU. Usando banco de stock 4K...")
         return False
         
-    print(f"      🤖 Generando secuencia cinemática multi-ángulo en la RTX 5090 ({ckpt_name}): '{prompt[:35]}...'")
+    print(f"      🤖 Generando secuencia cinemática HD en la RTX 5090 ({ckpt_name} - {steps_val} pasos): '{prompt[:35]}...'")
     try:
         # Prompt A: Macro Shot ultra detallado
         # Prompt B: Wide Cinematic Orbit Shot
         prompts_gpu = [
-            f"extreme macro closeup of {prompt}, glowing fiber optics, intricate circuits, laser lighting, 8k, photorealistic",
-            f"hero reveal wide angle view of {prompt}, volumetric cyan atmospheric lighting, dark high tech laboratory, 8k"
+            f"extreme macro cinematic closeup of {prompt}, masterfully composed, raytracing lighting, intricate micro-details, 8k, photorealistic masterpiece",
+            f"hero reveal wide angle orbital view of {prompt}, volumetric atmospheric lighting, dark high tech environment, 8k resolution, octane render"
         ]
         
         frames_descargados = []
@@ -305,32 +310,33 @@ def generar_video_comfyui_remoto(prompt, output_clip, host="http://100.95.107.65
                     "3": {
                         "class_type": "KSampler",
                         "inputs": {
-                            "cfg": 6.5, "denoise": 1.0, "latent_image": ["5", 0], "model": ["4", 0],
-                            "positive": ["6", 0], "negative": ["7", 0], "sampler_name": "euler", "scheduler": "normal", "seed": seed_val, "steps": 20
+                            "cfg": 6.0, "denoise": 1.0, "latent_image": ["5", 0], "model": ["4", 0],
+                            "positive": ["6", 0], "negative": ["7", 0], "sampler_name": "euler", "scheduler": "normal", "seed": seed_val, "steps": steps_val
                         }
                     },
                     "4": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": ckpt_name}},
                     "5": {"class_type": "EmptyLatentImage", "inputs": {"batch_size": 1, "height": 1024, "width": 576}},
-                    "6": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["4", 1], "text": f"cinematic 4k vertical video, {p_text}"}},
-                    "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["4", 1], "text": "blurry, low quality, distortion, cartoon"}},
+                    "6": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["4", 1], "text": f"cinematic 8k vertical video, {p_text}"}},
+                    "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["4", 1], "text": "blurry, low quality, distortion, ugly, cartoon, text, watermark"}},
                     "8": {"class_type": "VAEDecode", "inputs": {"samples": ["3", 0], "vae": ["4", 2]}},
                     "9": {"class_type": "SaveImage", "inputs": {"filename_prefix": f"GPU_Clip_{p_idx}", "images": ["8", 0]}}
                 }
             }
-            r = requests.post(f"{host}/prompt", json=workflow, timeout=15)
+            r = requests.post(f"{host}/prompt", json=workflow, timeout=20)
             if r.status_code == 200:
                 prompt_id = r.json().get("prompt_id")
                 import time
-                for _ in range(30):
-                    time.sleep(0.4)
-                    h_res = requests.get(f"{host}/history/{prompt_id}", timeout=5)
+                max_polls = max(40, int(timeout_val / 2.0))
+                for _ in range(max_polls):
+                    time.sleep(1.5)
+                    h_res = requests.get(f"{host}/history/{prompt_id}", timeout=8)
                     if h_res.status_code == 200 and prompt_id in h_res.json():
                         outputs = h_res.json()[prompt_id].get("outputs", {})
                         img_info = outputs.get("9", {}).get("images", [{}])[0]
                         fname = img_info.get("filename")
                         if fname:
                             view_url = f"{host}/view?filename={fname}&subfolder={img_info.get('subfolder', '')}&type=output"
-                            v_res = requests.get(view_url, timeout=20)
+                            v_res = requests.get(view_url, timeout=40)
                             if v_res.status_code == 200:
                                 tmp_frame = output_clip.parent / f"gpu_raw_{output_clip.stem}_{p_idx}.png"
                                 tmp_frame.write_bytes(v_res.content)

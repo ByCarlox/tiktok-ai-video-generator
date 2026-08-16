@@ -4,30 +4,8 @@
     "type": "split",
     "children": [
       {
-        "id": "0abfd49e71dcf293",
-        "type": "tabs",
-        "dimension": 70.58823529411765,
-        "children": [
-          {
-            "id": "27c01661d7e618db",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "TikTok-AI-Passive/03-Contenidos/Episodios/2026-08-12-el-nuevo-pixel-tag-es-la-respuesta-de-google-al-airtag-de-apple-y-tiene-un-diseño-exquisito/index.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "index"
-            }
-          }
-        ]
-      },
-      {
         "id": "44c9803683c98716",
         "type": "tabs",
-        "dimension": 29.411764705882355,
         "children": [
           {
             "id": "ccaac21c64eadb12",
@@ -203,32 +181,36 @@
       "bases:Create new base": false
     }
   },
-  "active": "27c01661d7e618db",
+  "active": "ccaac21c64eadb12",
   "lastOpenFiles": [
-    "output/work/samsung-ya-está-usando-claude-code-para-acelerar-e/tmp_6.jpg",
-    "output/work/samsung-ya-está-usando-claude-code-para-acelerar-e/tmp_5.jpg",
-    "output/work/samsung-ya-está-usando-claude-code-para-acelerar-e/tmp_4.jpg",
-    "output/work/samsung-ya-está-usando-claude-code-para-acelerar-e/tmp_3.jpg",
-    "output/work/samsung-ya-está-usando-claude-code-para-acelerar-e/tmp_2.jpg",
-    "output/work/samsung-ya-está-usando-claude-code-para-acelerar-e/tmp_1.jpg",
-    "output/work/samsung-ya-está-usando-claude-code-para-acelerar-e/tmp_0.jpg",
-    "output/work/samsung-ya-está-usando-claude-code-para-acelerar-e/v3.mp4",
-    "output/work/samsung-ya-está-usando-claude-code-para-acelerar-e/thumb_check_tmp_clip_3.jpg",
-    "output/work/samsung-ya-está-usando-claude-code-para-acelerar-e/tmp_clip_3.mp4",
-    "output/work/samsung-ya-está-usando-claude-code-para-acelerar-e/thumb_check_tmp_clip_2.jpg",
-    "output/work/samsung-ya-está-usando-claude-code-para-acelerar-e/tmp_clip_2.mp4",
-    "output/work/samsung-ya-está-usando-claude-code-para-acelerar-e/thumb_check_tmp_clip_1.jpg",
-    "output/work/samsung-ya-está-usando-claude-code-para-acelerar-e/tmp_clip_1.mp4",
-    "output/work/samsung-ya-está-usando-claude-code-para-acelerar-e/thumb_check_tmp_clip_0.jpg",
-    "output/work/samsung-ya-está-usando-claude-code-para-acelerar-e/tmp_clip_0.mp4",
-    "assets/musica/track_samsung-ya-está-usando-claude-code-para-_2.json",
-    "assets/musica/track_samsung-ya-está-usando-claude-code-para-_2.mp3",
-    "output/work/samsung-ya-está-usando-claude-code-para-acelerar-e/raw.mp3",
-    "output/para_subir/20260812_1718_se-cancela-barbie-2-un-conflicto-salarial-pone-en-.txt",
-    "output/para_subir/20260812_1718_se-cancela-barbie-2-un-conflicto-salarial-pone-en-.mp4",
-    "TikTok-AI-Passive/03-Contenidos/Episodios/2026-08-12-se-cancela-barbie-2-un-conflicto-salarial-pone-en-jaque-el-futuro-de-la-saga/index.md",
-    "README.md",
+    "install_liveportrait_wan21_rtx5090.ps1",
+    "output/work/nature-has-spent-billions-of-years-fighting-bacter/s.srt",
+    "assets/musica/track_nature-has-spent-billions-of-years-fight_2.json",
+    "assets/musica/track_nature-has-spent-billions-of-years-fight_2.mp3",
+    "output/work/nature-has-spent-billions-of-years-fighting-bacter/raw.mp3",
+    "output/para_subir/20260816_1351_anthropic-shares-more-details-about-how-claudes-ne.txt",
+    "output/para_subir/20260816_1351_anthropic-shares-more-details-about-how-claudes-ne.mp4",
+    "TikTok-AI-Passive/01_Memory_Vault/Topics_Memory/anthropic_shares_more_details_about.md",
+    "TikTok-AI-Passive/02_Production_Logs/Scripts_Archive/20260816_1354_anthropic_shares_more_details_about.md",
+    "output/videos/20260816_1351_anthropic-shares-more-details-about-how-claudes-ne.meta.json",
+    "output/work/anthropic-shares-more-details-about-how-claudes-ne/qa_frames/qa_frame_4.jpg",
+    "output/work/anthropic-shares-more-details-about-how-claudes-ne/qa_frames/qa_frame_3.jpg",
+    "output/work/anthropic-shares-more-details-about-how-claudes-ne/qa_frames/qa_frame_2.jpg",
+    "output/work/anthropic-shares-more-details-about-how-claudes-ne/qa_frames/qa_frame_1.jpg",
+    "output/work/anthropic-shares-more-details-about-how-claudes-ne/qa_frames/qa_frame_0.jpg",
+    "output/work/anthropic-shares-more-details-about-how-claudes-ne/qa_frames",
+    "output/videos/20260816_1351_anthropic-shares-more-details-about-how-claudes-ne.mp4",
+    "output/work/anthropic-shares-more-details-about-how-claudes-ne/v_avatar_pip.mov",
+    "output/work/anthropic-shares-more-details-about-how-claudes-ne/pip_neon_ring.png",
+    "output/work/anthropic-shares-more-details-about-how-claudes-ne/pip_circ_mask.png",
+    "output/work/anthropic-shares-more-details-about-how-claudes-ne/audio_waveform.png",
+    "output/work/anthropic-shares-more-details-about-how-claudes-ne/sub_030.png",
+    "output/work/anthropic-shares-more-details-about-how-claudes-ne/sub_029.png",
+    "TikTok-AI-Passive/00_Brain_Center/🧬_PROYECTO_LORE.md",
+    "TikTok-AI-Passive/00_Brain_Center/🧠_CENTRAL_DASHBOARD.md",
     "Dashboard.md",
+    "README.md",
+    "TikTok-AI-Passive/03-Contenidos/Episodios/2026-08-12-se-cancela-barbie-2-un-conflicto-salarial-pone-en-jaque-el-futuro-de-la-saga/index.md",
     "TikTok-AI-Passive/01-Estrategia/propuesta-de-valor.md",
     "TikTok-AI-Passive/03-Contenidos/Episodios/2026-08-11-cotiar-r11-una-aspiradora-de-64-euros-que-no-se-comporta-como-una-de-64-euros/index.md",
     "TikTok-AI-Passive/03-Contenidos/Episodios/2026-08-11-openai-prepara-un-altavoz-con-forma-de-donut-sin-pantalla-con-piezas-que-se-mueven-solas-y-un-precio-de-300-400-dólares/index.md",
@@ -246,10 +228,6 @@
     "TikTok-AI-Passive/03-Contenidos/Episodios/2026-08-07-organo-de-administracion-judicial-adjudica-a-norma/index.md",
     "TikTok-AI-Passive/03-Contenidos/Episodios/2026-08-07-que-pasa-con-el-aguacate-en-mexico-eeuu-podria-fre/index.md",
     "TikTok-AI-Passive/03-Contenidos/Episodios/2026-08-07-examen-de-control-de-la-unam-estos-son-los-puntaje/index.md",
-    "TikTok-AI-Passive/03-Contenidos/Episodios/2026-08-06-detienen-al-exgobernador-angel-aguirre-en-el-caso/index.md",
-    "TikTok-AI-Passive/Dashboard.md",
-    "Welcome.md",
-    "TikTok-AI-Passive/Templates/metricas-diarias.md",
-    "TikTok-AI-Passive/Templates/idea-video.md"
+    "TikTok-AI-Passive/03-Contenidos/Episodios/2026-08-06-detienen-al-exgobernador-angel-aguirre-en-el-caso/index.md"
   ]
 }

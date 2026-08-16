@@ -136,19 +136,20 @@ def animar_personaje_neuronal_comfyui(avatar_img_path: Path, audio_path: Path, o
                             "3": {"class_type": "VAELoader", "inputs": {"vae_name": "wan_2.1_vae.safetensors"}},
                             "4": {"class_type": "CLIPVisionLoader", "inputs": {"clip_name": "clip_vision_h.safetensors"}},
                             "5": {"class_type": "LoadImage", "inputs": {"image": img_name}},
-                            "6": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": "masterpiece, best quality, ultra-detailed anime girl news presenter, talking enthusiastically, natural mouth movement, blinking eyes, expressive smile, moving head, dynamic lighting, 8k, fluid motion"}},
-                            "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": "blurry, low quality, static, deformed, glitch, distortion"}},
-                            "8": {"class_type": "WanImageToVideo", "inputs": {"positive": ["6", 0], "negative": ["7", 0], "vae": ["3", 0], "width": 720, "height": 1280, "length": 81, "batch_size": 1, "start_image": ["5", 0]}},
-                            "9": {"class_type": "KSampler", "inputs": {"model": ["1", 0], "positive": ["8", 0], "negative": ["8", 1], "latent_image": ["8", 2], "seed": 7777, "steps": 25, "cfg": 6.0, "sampler_name": "euler", "scheduler": "normal", "denoise": 1.0}},
-                            "10": {"class_type": "VAEDecode", "inputs": {"samples": ["9", 0], "vae": ["3", 0]}},
-                            "11": {"class_type": "SaveAnimatedWEBP", "inputs": {"images": ["10", 0], "fps": 24, "filename_prefix": "WanAvatar"}}
+                            "6": {"class_type": "CLIPVisionEncode", "inputs": {"clip_vision": ["4", 0], "image": ["5", 0], "crop": "center"}},
+                            "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": "masterpiece, best quality, ultra-detailed anime girl news presenter, talking enthusiastically, natural mouth movement, blinking eyes, expressive smile, moving head, dynamic lighting, 8k, fluid motion"}},
+                            "8": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": "blurry, low quality, static, deformed, glitch, distortion"}},
+                            "9": {"class_type": "WanImageToVideo", "inputs": {"positive": ["7", 0], "negative": ["8", 0], "vae": ["3", 0], "width": 720, "height": 1280, "length": 81, "batch_size": 1, "start_image": ["5", 0], "clip_vision_output": ["6", 0]}},
+                            "10": {"class_type": "KSampler", "inputs": {"model": ["1", 0], "positive": ["9", 0], "negative": ["9", 1], "latent_image": ["9", 2], "seed": 7777, "steps": 25, "cfg": 6.0, "sampler_name": "euler", "scheduler": "normal", "denoise": 1.0}},
+                            "11": {"class_type": "VAEDecode", "inputs": {"samples": ["10", 0], "vae": ["3", 0]}},
+                            "12": {"class_type": "SaveAnimatedPNG", "inputs": {"images": ["11", 0], "fps": 24.0, "compress_level": 4, "filename_prefix": "WanAvatar"}}
                         }
                     }
                     
                     q_res = requests.post(f"{host}/prompt", json=prompt_workflow, timeout=10)
                     if q_res.status_code == 200:
                         prompt_id = q_res.json().get("prompt_id")
-                        print(f"      ⏳ Generando animación IA en RTX 5090 (ID: {prompt_id[:8]})...")
+                        print(f"      ⏳ Generando animación IA con Wan 2.1 en RTX 5090 (ID: {prompt_id[:8]})...")
                         for _ in range(60):
                             time.sleep(5)
                             h_res = requests.get(f"{host}/history/{prompt_id}", timeout=5).json()
@@ -159,12 +160,12 @@ def animar_personaje_neuronal_comfyui(avatar_img_path: Path, audio_path: Path, o
                                         file_info = (node_out.get("images") or node_out.get("gifs"))[0]
                                         view_url = f"{host}/view?filename={file_info['filename']}&subfolder={file_info.get('subfolder','')}&type={file_info.get('type','output')}"
                                         vid_bytes = requests.get(view_url, timeout=30).content
-                                        tmp_res = output_clip.parent / "wan_raw_anim.webp"
+                                        tmp_res = output_clip.parent / "wan_raw_anim.png"
                                         tmp_res.write_bytes(vid_bytes)
-                                        subprocess.run(["ffmpeg", "-y", "-i", str(tmp_res.resolve()), "-c:v", "libx264", "-pix_fmt", "yuv420p", str(output_clip.resolve())], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                                        subprocess.run(["ffmpeg", "-y", "-i", str(tmp_res.resolve()), "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30", str(output_clip.resolve())], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                                         tmp_res.unlink(missing_ok=True)
                                         if output_clip.exists() and output_clip.stat().st_size > 10000:
-                                            print("      ✅ ¡Video de Personaje Animado por IA completado exitosamente en RTX 5090!")
+                                            print("      ✅ ¡Video de Personaje Wan 2.1 14B completado exitosamente en RTX 5090!")
                                             return True
     except Exception as e:
         print(f"      ℹ️ ComfyUI Wan 2.1 I2V fallback: {e}")

@@ -25,5 +25,32 @@
     "qa_score": 90.0,
     "duracion": 37.5,
     "video_file": "20260816_1447_nature-has-spent-billions-of-years-fighting-bacter.mp4"
+  },
+  "20260816_1526_openai_lanza_ultrafast_gpt-56_sol_a": {
+    "tema": "OpenAI lanza Ultrafast: GPT-5.6 Sol a 14x su velocidad habitual gracias a los chips de Cerebras",
+    "category": "tecnologia",
+    "date_last": "2026-08-16 15:26:40",
+    "times_covered": 1,
+    "qa_score": 90.0,
+    "duracion": 21.4,
+    "video_file": "20260816_1525_openai-lanza-ultrafast-gpt-56-sol-a-14x-su-velocid.mp4"
+  },
+  "20260816_1531_abelardo_de_la_espriella_anuncia_do": {
+    "tema": "Abelardo De La Espriella anuncia donación de Jaime Gilinski y su esposa Raquel por 150.000 millones de pesos para la reconstrucción en Cali",
+    "category": "tecnologia",
+    "date_last": "2026-08-16 15:31:52",
+    "times_covered": 1,
+    "qa_score": 90.0,
+    "duracion": 16.3,
+    "video_file": "20260816_1530_abelardo-de-la-espriella-anuncia-donación-de-jaime.mp4"
+  },
+  "20260816_1537_google_will_now_allow_users_to_remo": {
+    "tema": "Google will now allow users to remove visible watermark from its AI generations",
+    "category": "tecnologia",
+    "date_last": "2026-08-16 15:37:30",
+    "times_covered": 1,
+    "qa_score": 90.0,
+    "duracion": 18.8,
+    "video_file": "20260816_1536_google-will-now-allow-users-to-remove-visible-wate.mp4"
   }
 }
